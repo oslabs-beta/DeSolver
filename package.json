@@ -6,7 +6,8 @@
   "scripts": {
     "start": "NODE_ENV=production nodemon server/server.js",
     "build": "NODE_ENV=production webpack",
-    "dev": "NODE_ENV=development webpack serve --open & NODE_ENV=development nodemon server/server.js"
+    "dev": "NODE_ENV=development webpack serve --open & NODE_ENV=development nodemon server/server.js",
+    "lint": "eslint --ext .jsx --ext .js"
   },
   "repository": {
     "type": "git",
@@ -25,11 +26,14 @@
     "react-dom": "^17.0.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.17.2",
+    "@babel/core": "^7.17.4",
+    "@babel/eslint-parser": "^7.17.0",
     "@babel/preset-env": "^7.16.11",
     "@babel/preset-react": "^7.16.7",
     "babel-loader": "^8.2.3",
     "dotenv": "^16.0.0",
+    "eslint": "^8.9.0",
+    "eslint-webpack-plugin": "^3.1.1",
     "html-webpack-plugin": "^5.5.0",
     "nodemon": "^2.0.15",
     "webpack": "^5.68.0",
