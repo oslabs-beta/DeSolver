@@ -1,21 +1,28 @@
-require('dotenv').config();
-
-const path = require('path');
-const express = require('express');
 const PORT = 3000;
+const { ApolloServer, gql } = require('apollo-server-express');
+const express = require('express');
 const app = express();
 
-app.use((err, req, res, next) => {
-    const defaultErr = {
-      log: 'Express error handler caught unknown middleware error',
-      status: 500,
-      message: { err: 'An error occurred' },
-    };
-    const errorObj = { ...defaultErr, ...err };
-    console.log(errorObj.log);
-    return res.status(errorObj.status).json(errorObj.message);
-  });
+const typeDefs = gql`
+  type Query {
+    hello: String
+  }
+`;
 
-app.listen(PORT, () => {
-    console.log(`Server listening on port: ${PORT}...`);
-  });
+const resolvers = {
+  Query: {
+    hello: () => 'Hello world!',
+  },
+};
+
+startApolloServer(typeDefs, resolvers);
+
+async function startApolloServer(typeDefs, resolvers) {
+  const server = new ApolloServer({ typeDefs, resolvers });
+  await server.start()
+  await server.applyMiddleware({app})
+
+  app.listen(PORT, () => {
+      console.log(`Server listening on port: ${PORT}...`);
+    });
+}
