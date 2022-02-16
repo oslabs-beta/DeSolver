@@ -1,0 +1,9 @@
+{
+  "parser": "@babel/eslint-parser",
+  "parserOptions": { "requireConfigFile" : "false" },
+  "rules": {
+    "indent": ["error", 2],
+    "jsx-quotes": ["error", "prefer-single"],
+    "quotes": ["error", "single"]
+  }
+}
