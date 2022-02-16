@@ -11,7 +11,7 @@ module.exports = {
     plugins: [new HtmlWebpackPlugin({
         template: path.join(__dirname, './client/index.html')
         }),
-        new ESLintPlugin(extensions)
+        new ESLintPlugin(options)
     ],
     mode: process.env.NODE_ENV,
     module: {
