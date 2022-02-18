@@ -1,7 +1,6 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ESLintPlugin = require('eslint-webpack-plugin');
 const path = require('path');
-const { ESLint } = require('eslint');
 
 module.exports = {
   entry: './client/index.js',
