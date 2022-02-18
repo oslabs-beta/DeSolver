@@ -24,12 +24,6 @@ module.exports = {
         use: {
           loader: 'babel-loader',
           options: {
-<<<<<<< HEAD
-            presets: ['@babel/preset-env', '@babel/preset-react'],
-          },
-        },
-      },
-=======
             presets: [
               '@babel/preset-env',
               '@babel/preset-react',
@@ -43,7 +37,6 @@ module.exports = {
         use: 'ts-loader',
         exclude: /node_modules/,
       },
->>>>>>> 1a669f1ef10bd8ecc468dc4facbe8a67510828a9
     ],
   },
   devServer: {
@@ -54,10 +47,6 @@ module.exports = {
   },
   resolve: {
     // Enable importing JS / JSX files without specifying their extension
-<<<<<<< HEAD
-    extensions: ['.js', '.jsx'],
-=======
     extensions: ['.js', '.jsx', '.tsx', '.ts'],
->>>>>>> 1a669f1ef10bd8ecc468dc4facbe8a67510828a9
   },
 };
