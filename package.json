@@ -8,8 +8,10 @@
     "build": "NODE_ENV=production webpack",
     "dev": "NODE_ENV=development webpack serve --open & NODE_ENV=development nodemon server/server.js",
     "lint": "eslint --ext .jsx --ext .js",
-    "test": "jest"
+    "test": "jest",
+    "prepare": "husky install"
   },
+
   "repository": {
     "type": "git",
     "url": "git+https://github.com/oslabs-beta/DeSolver.git"
@@ -45,6 +47,7 @@
     "react-test-renderer": "^17.0.2",
     "webpack": "^5.68.0",
     "webpack-cli": "^4.9.2",
-    "webpack-dev-server": "^4.7.4"
+    "webpack-dev-server": "^4.7.4",
+    "husky": "^7.0.0"
   }
 }
