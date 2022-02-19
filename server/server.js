@@ -65,7 +65,7 @@ const resolvers = {
     },
   },
 
-  Population: {
+  Country: {
     population: async (parent, __, context, info) => {
       console.log('in the population query');
       try {
