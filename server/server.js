@@ -19,10 +19,10 @@ startApolloServer(typeDefs, resolvers);
 
 async function startApolloServer(typeDefs, resolvers) {
   const server = new ApolloServer({ typeDefs, resolvers });
-  await server.start()
-  await server.applyMiddleware({app})
+  await server.start();
+  await server.applyMiddleware({ app });
 
   app.listen(PORT, () => {
-      console.log(`Server listening on port: ${PORT}...`);
-    });
+    console.log(`Server listening on port: ${PORT}...`);
+  });
 }
