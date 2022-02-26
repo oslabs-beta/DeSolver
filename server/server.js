@@ -25,17 +25,25 @@ const typeDefs = gql`
   }
 `;
 
-const helloFirst = async (parent, args, context, info) => console.log('Hello First!');
-const helloSecond = async (parent, args, context, info) => console.log('Hello Second!');
-const helloThird = async (parent, args, context, info) => console.log('Hello Third!');
+const helloFirst = async (parent, args, context, info) =>
+  console.log('Hello First!');
+const helloSecond = async (parent, args, context, info) =>
+  console.log('Hello Second!');
+const helloThird = async (parent, args, context, info) =>
+  console.log('Hello Third!');
 
 const resolvers = {
   Query: {
     hello: (parent, args, context, info) => {
       const desolver = new Desolver(parent, args, context, info);
-      return desolver.use(helloFirst, helloSecond, helloThird, (parent, args, context, info) => {
-        return 'Hello Final!';
-      });
+      return desolver.use(
+        helloFirst,
+        helloSecond,
+        helloThird,
+        (parent, args, context, info) => {
+          return 'Hello Final!';
+        }
+      );
     },
 
     getPopByCountry: async (parent, args, context, info) => {
