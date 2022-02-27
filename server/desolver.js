@@ -10,6 +10,7 @@ var Desolver = /** @class */ (function () {
         this.info = info;
         this.pipeline = pipeline;
         this.hasNext = hasNext;
+        this.next = this.next.bind(this);
     }
     Desolver.prototype.use = function () {
         var resolvers = [];
@@ -23,17 +24,35 @@ var Desolver = /** @class */ (function () {
         // iterate over array
         // check hasNext < array length
         // call next -> icrement hasNext 
-        for (var i = 0; i < this.pipeline.length; i++) {
-            if (i === this.pipeline.length - 1) {
-                return this.pipeline[i](this.parent, this.args, this.context, this.info, this.next);
+        // for (let i = 0; i < this.pipeline.length; i++) {
+        //   // console.log('this.hasNext: ', this.hasNext)
+        //   // this.next()
+        //   if (i === this.pipeline.length - 1) {
+        //     return this.pipeline[i](
+        //       this.parent,
+        //       this.args,
+        //       this.context,
+        //       this.info,
+        //       this.next
+        //     );
+        //   }
+        //   // console.log('this.next: ', this.next)
+        //   this.pipeline[i](this.parent, this.args, this.context, this.info, this.next);
+        // }
+        while (this.hasNext <= this.pipeline.length - 1) {
+            if (this.hasNext === this.pipeline.length - 1) {
+                return this.pipeline[this.hasNext](this.parent, this.args, this.context, this.info, this.next);
             }
-            while (this.hasNext < this.pipeline.length) {
-                this.pipeline[this.hasNext](this.parent, this.args, this.context, this.info, this.next);
-            }
+            this.pipeline[this.hasNext](this.parent, this.args, this.context, this.info, this.next);
+            // if (returnedValue !== undefined) {
+            //   return returnedValue;
+            // }
         }
     };
     Desolver.prototype.next = function () {
-        return this.hasNext += 1;
+        console.log('before increment next: ', this.hasNext);
+        this.hasNext += 1;
+        console.log('after increment next: ', this.hasNext);
     };
     return Desolver;
 }());
