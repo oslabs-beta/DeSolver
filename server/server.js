@@ -25,14 +25,6 @@ const typeDefs = gql`
   }
 `;
 
-<<<<<<< HEAD
-const helloFirst = async (parent, args, context, info) =>
-  console.log('Hello First!');
-const helloSecond = async (parent, args, context, info) =>
-  console.log('Hello Second!');
-const helloThird = async (parent, args, context, info) =>
-  console.log('Hello Third!');
-=======
 const helloFirst = async (parent, args, context, info, next) => {
   console.log('Hello First!');
   console.log('next in helloFirst: ', next);
@@ -46,7 +38,6 @@ const helloThird = async (parent, args, context, info, next) => {
   console.log('Hello Third!');
   next();
 };
->>>>>>> mchan/desolver-cor-pattern
 
 const resolvers = {
   Query: {
