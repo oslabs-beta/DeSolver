@@ -6,20 +6,35 @@ export type Resolver = (
   next: (() => void)
 ) => unknown;
 
+export type resolverWrapper = (
+  parent: Record<string, object>,
+  args: Record<string, object>,
+  context: Record<string, object>,
+  info: Record<string, object>
+) => unknown;
+
 export class Desolver {
+  public static use(...resolvers: Resolver[]): resolverWrapper {
+    return async (parent, args, context, info) => {
+      const desolver = new Desolver(parent, args, context, info);
+      return await desolver.composePipeline(...resolvers);
+    };
+  }
+
+  private hasNext: number = 0;
+  private pipeline: Resolver[];
   
   constructor(
     public parent: Record<string, object>,
     public args: Record<string, object>,
     public context: Record<string, object>,
     public info: Record<string, object>,
-    public pipeline: Resolver[],
-    public hasNext: number = 0,
+
     ) {
       this.next = this.next.bind(this);
     }
 
-  public use(...resolvers: Resolver[]): unknown {
+  public composePipeline(...resolvers: Resolver[]): unknown {
     this.pipeline = resolvers;
     return this.execute();
   }
@@ -34,8 +49,6 @@ export class Desolver {
   }
 
   public next() {
-    console.log('before increment next: ', this.hasNext)
     this.hasNext += 1;
-    console.log('after increment next: ', this.hasNext)
   }
 }
