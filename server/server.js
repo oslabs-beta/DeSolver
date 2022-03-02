@@ -22,6 +22,13 @@ const typeDefs = gql`
     country_name: String
     region_id: Int
     population: Population
+    address: Address
+  }
+  type Address {
+    address: String
+    city: String
+    state_province: String
+    country_id_address: String
   }
 `;
 
@@ -42,17 +49,23 @@ const helloThird = async (parent, args, context, info, next) => {
 // Desolver Test Middleware for getAllCountries root query
 const queryAllCountries = async (_, __, context, info) => {
   try {
-    const query = `SELECT * FROM countries;`;
+    const query = `
+    SELECT * FROM countries;`;
     const allCountries = await db.query(query);
     return allCountries.rows;
   } catch (err) {
     console.log('error in getAllCountries: ', err);
   }
-}
+};
 
 const resolvers = {
   Query: {
-    hello: Desolver.use(helloFirst, helloSecond, helloThird, (parent, args, context, info) => 'Hello Final!'),
+    hello: Desolver.use(
+      helloFirst,
+      helloSecond,
+      helloThird,
+      (parent, args, context, info) => 'Hello Final!'
+    ),
 
     getPopByCountry: async (parent, args, context, info) => {
       try {
@@ -101,6 +114,19 @@ const resolvers = {
         return { population };
       } catch (err) {
         console.log('error with getPopByCountry: ', err);
+      }
+    },
+  },
+  Address: {
+    address: async (_, __, context, info) => {
+      try {
+        const query = `
+        SELECT * FROM locations;`;
+        const allAddresses = await db.query(query);
+        console.log(allAddresses.rows);
+        return allAddresses.rows;
+      } catch (err) {
+        console.log('error in allAddresses: ', err);
       }
     },
   },
