@@ -44,6 +44,7 @@ var Desolver = /** @class */ (function () {
         this.context = context;
         this.info = info;
         this.hasNext = 0;
+        this.resolvedObject = { resolved: false, value: null };
         this.next = this.next.bind(this);
     }
     Desolver.use = function () {
@@ -74,14 +75,28 @@ var Desolver = /** @class */ (function () {
     };
     Desolver.prototype.execute = function () {
         while (this.hasNext <= this.pipeline.length - 1) {
+            if (this.resolvedObject.resolved)
+                return this.resolvedObject.value;
             if (this.hasNext === this.pipeline.length - 1) {
                 return this.pipeline[this.hasNext](this.parent, this.args, this.context, this.info, this.next);
             }
             this.pipeline[this.hasNext](this.parent, this.args, this.context, this.info, this.next);
         }
     };
-    Desolver.prototype.next = function () {
-        this.hasNext += 1;
+    Desolver.prototype.next = function (err, resolveValue) {
+        try {
+            if (err)
+                throw new Error(err);
+            if (resolveValue) {
+                this.resolvedObject.resolved = true;
+                return this.resolvedObject.value = resolveValue;
+            }
+            ;
+            this.hasNext += 1;
+        }
+        catch (error) {
+            throw error;
+        }
     };
     return Desolver;
 }());

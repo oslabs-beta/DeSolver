@@ -1,38 +1,48 @@
 export type Resolver = (
-  parent: Record<string, object>,
-  args: Record<string, object>,
-  context: Record<string, object>,
-  info: Record<string, object>,
-  next: (() => void)
+  parent: Record<string, unknown>,
+  args: Record<string, unknown>,
+  context: Record<string, unknown>,
+  info: Record<string, unknown>,
+  next: () => void
 ) => unknown;
 
-export type resolverWrapper = (
-  parent: Record<string, object>,
-  args: Record<string, object>,
-  context: Record<string, object>,
-  info: Record<string, object>
-) => unknown;
+export type ResolverWrapper = (
+  parent: Record<string | number | symbol, unknown>,
+  args: Record<string, unknown>,
+  context: Record<string, unknown>,
+  info: Record<string, unknown>
+) => unknown | Promise<unknown>;
+
+export interface ResolvedObject {
+  resolved: boolean;
+  value: unknown;
+}
 
 export class Desolver {
-  public static use(...resolvers: Resolver[]): resolverWrapper {
-    return async (parent, args, context, info) => {
-      const desolver = new Desolver(parent, args, context, info);
-      return await desolver.composePipeline(...resolvers);
+  public static use(...resolvers: Resolver[]): ResolverWrapper {
+    return async (
+      parent: Record<string, unknown>,
+      args: Record<string, unknown>,
+      context: Record<string, unknown>,
+      info: Record<string, unknown>
+    ): Promise<unknown> => {
+        const desolver = new Desolver(parent, args, context, info);
+        return await desolver.composePipeline(...resolvers);
     };
   }
 
   private hasNext: number = 0;
   private pipeline: Resolver[];
-  
-  constructor(
-    public parent: Record<string, object>,
-    public args: Record<string, object>,
-    public context: Record<string, object>,
-    public info: Record<string, object>,
+  private resolvedObject: ResolvedObject = { resolved: false, value: null }
 
-    ) {
-      this.next = this.next.bind(this);
-    }
+  constructor(
+    public parent: Record<string, unknown>,
+    public args: Record<string, unknown>,
+    public context: Record<string, unknown>,
+    public info: Record<string, unknown>
+  ) {
+    this.next = this.next.bind(this);
+  }
 
   public composePipeline(...resolvers: Resolver[]): unknown {
     this.pipeline = resolvers;
@@ -41,14 +51,38 @@ export class Desolver {
 
   private execute(): unknown {
     while (this.hasNext <= this.pipeline.length - 1) {
+      if (this.resolvedObject.resolved) return this.resolvedObject.value;
+
       if (this.hasNext === this.pipeline.length - 1) {
-        return this.pipeline[this.hasNext](this.parent, this.args, this.context, this.info, this.next);
+        return this.pipeline[this.hasNext](
+          this.parent,
+          this.args,
+          this.context,
+          this.info,
+          this.next
+        );
       }
-      this.pipeline[this.hasNext](this.parent, this.args, this.context, this.info, this.next);
+
+      this.pipeline[this.hasNext](
+        this.parent,
+        this.args,
+        this.context,
+        this.info,
+        this.next
+      );
     }
   }
 
-  public next() {
-    this.hasNext += 1;
+  public next<T>(err?: string, resolveValue?: T ): void | T {
+    try {
+      if (err) throw new Error(err)
+      if (resolveValue) {
+        this.resolvedObject.resolved = true;
+        return this.resolvedObject.value = resolveValue;
+      };
+      this.hasNext += 1;
+    } catch (error: unknown) {
+      throw error;
+    }
   }
 }

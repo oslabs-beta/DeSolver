@@ -35,24 +35,24 @@ const typeDefs = gql`
 // Desolver Test Middleware for hello root query
 const helloFirst = async (parent, args, context, info, next) => {
   console.log('Hello First!');
-  next();
+  return next();
 };
 const helloSecond = async (parent, args, context, info, next) => {
   console.log('Hello Second!');
-  next();
+  return next(null, 'I am second resolved!');
 };
 const helloThird = async (parent, args, context, info, next) => {
   console.log('Hello Third!');
-  next();
+  return next(null, 'I am third resolved!');
 };
 
 // Desolver Test Middleware for getAllCountries root query
-const queryAllCountries = async (_, __, context, info) => {
+const queryAllCountries = async (_, __, context, info, next) => {
   try {
     const query = `
     SELECT * FROM countries;`;
     const allCountries = await db.query(query);
-    return allCountries.rows;
+    return next(null, allCountries.rows);
   } catch (err) {
     console.log('error in getAllCountries: ', err);
   }
