@@ -49,17 +49,23 @@ const helloThird = async (parent, args, context, info, next) => {
 // Desolver Test Middleware for getAllCountries root query
 const queryAllCountries = async (_, __, context, info) => {
   try {
-    const query = `SELECT * FROM countries;`;
+    const query = `
+    SELECT * FROM countries;`;
     const allCountries = await db.query(query);
     return allCountries.rows;
   } catch (err) {
     console.log('error in getAllCountries: ', err);
   }
-}
+};
 
 const resolvers = {
   Query: {
-    hello: Desolver.use(helloFirst, helloSecond, helloThird, (parent, args, context, info) => 'Hello Final!'),
+    hello: Desolver.use(
+      helloFirst,
+      helloSecond,
+      helloThird,
+      (parent, args, context, info) => 'Hello Final!'
+    ),
 
     getPopByCountry: async (parent, args, context, info) => {
       try {
