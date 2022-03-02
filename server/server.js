@@ -25,9 +25,9 @@ const typeDefs = gql`
   }
 `;
 
+// Desolver Test Middleware for hello root query
 const helloFirst = async (parent, args, context, info, next) => {
   console.log('Hello First!');
-  console.log('next in helloFirst: ', next);
   next();
 };
 const helloSecond = async (parent, args, context, info, next) => {
@@ -39,24 +39,25 @@ const helloThird = async (parent, args, context, info, next) => {
   next();
 };
 
+// Desolver Test Middleware for getAllCountries root query
+const queryAllCountries = async (_, __, context, info) => {
+  try {
+    const query = `SELECT * FROM countries;`;
+    const allCountries = await db.query(query);
+    return allCountries.rows;
+  } catch (err) {
+    console.log('error in getAllCountries: ', err);
+  }
+}
+
 const resolvers = {
   Query: {
-    hello: (parent, args, context, info) => {
-      const desolver = new Desolver(parent, args, context, info);
-      return desolver.use(
-        helloFirst,
-        helloSecond,
-        helloThird,
-        (parent, args, context, info) => {
-          return 'Hello Final!';
-        }
-      );
-    },
+    hello: Desolver.use(helloFirst, helloSecond, helloThird, (parent, args, context, info) => 'Hello Final!'),
 
     getPopByCountry: async (parent, args, context, info) => {
       try {
         const desolver = new Desolver(parent, args, context, info);
-        return desolver.use(async (parent, args, context, info) => {
+        return desolver.composePipeline(async (parent, args, context, info) => {
           const { country } = args;
           const queryRes = await axios({
             method: 'GET',
@@ -76,19 +77,7 @@ const resolvers = {
       }
     },
 
-    getAllCountries: async (_, __, context, info) => {
-      try {
-        const query = `SELECT * FROM countries;`;
-        const allCountries = await db.query(query);
-        console.log(allCountries.rows);
-        return allCountries.rows;
-        // return allCountries.rows.map((country) => {
-        //   return country.country_name;
-        // });
-      } catch (err) {
-        console.log('error in getAllCountries: ', err);
-      }
-    },
+    getAllCountries: Desolver.use(queryAllCountries),
   },
 
   Country: {
