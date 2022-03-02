@@ -21,21 +21,13 @@ const typeDefs = gql`
     country_name: String
     region_id: Int
     population: Population
+    address: Address
   }
   type Address {
     address: String
     city: String
     state_province: String
     country_id_address: String
-  }
-  type GeoCode {
-    latitude: Int
-    longitude: Int
-    city: String
-    latLong: LatLong
-  }
-  type LatLong {
-    latLong: String
   }
 `;
 
@@ -114,30 +106,6 @@ const resolvers = {
         return allAddresses.rows;
       } catch (err) {
         console.log('error in allAddresses: ', err);
-      }
-    },
-  },
-  GeoCode: {
-    latLong: async (parent, __, context, info) => {
-      console.log('in the latlong query');
-      try {
-        let city = parent.city;
-        console.log('address in GeoCode query: ', address);
-        const queryRes = await axios({
-          method: 'GET',
-          url: 'https://api.myptv.com/geocoding/v1/locations/by-text',
-          searchText: { city },
-          headers: {
-            apiKey:
-              'YjM2YzY2MzllZmNiNGQwODhkNmEzMDEyODQxYzlmMDE6YWY4MzRjZTAtN2QyYS00MDhlLWIyYzgtNmEwNWFmMzE2NmU2',
-            'Content-Type': 'application/json',
-          },
-        });
-        console.log(queryRes.data);
-        const latLong = queryRes.data.body.locations.referencePosition;
-        return { latitude, longitude };
-      } catch (err) {
-        console.log('error in GeoCode: ', err);
       }
     },
   },
