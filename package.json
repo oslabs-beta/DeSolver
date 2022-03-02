@@ -9,7 +9,8 @@
     "dev": "NODE_ENV=development webpack serve --open & NODE_ENV=development nodemon server/server.js",
     "lint": "eslint --ext .jsx --ext .js --ext .ts",
     "test": "jest",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "desolve": "nodemon server/server.js & tsc -w server/desolver.ts"
   },
   "repository": {
     "type": "git",
