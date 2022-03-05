@@ -1,16 +1,12 @@
 import React from 'react';
 import { GoBeaker } from 'react-icons/go';
-import { HeroContainer, LogoContainer, Greeting} from './Hero.styled'
+import { Greeting} from './Hero.styled'
 
 
 const Hero = () => {
   return (
     <>
-      <HeroContainer>
-        <LogoContainer>
-          <GoBeaker />
-        </LogoContainer>
-      </HeroContainer>
+      <Greeting>THE END</Greeting>
     </>
   );
 };
