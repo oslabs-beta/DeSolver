@@ -7,6 +7,11 @@ module.exports = {
   output: {
     path: path.join(__dirname, 'build'),
     filename: 'bundle.js',
+    library: {
+      name: 'bundle',
+      type: 'umd',
+    },
+    libraryTarget: 'umd',
   },
   devtool: 'source-map',
   plugins: [
@@ -37,6 +42,7 @@ module.exports = {
         use: 'ts-loader',
         exclude: /node_modules/,
       },
+
     ],
   },
   devServer: {
@@ -48,5 +54,29 @@ module.exports = {
   resolve: {
     // Enable importing JS / JSX files without specifying their extension
     extensions: ['.js', '.jsx', '.tsx', '.ts'],
+    alias: {
+      'styled-components': require.resolve('styled-components')
+    }
   },
+
+  //this resolved the mutli instances style-components issue
+  /* externals: {
+    react: {
+      commonjs: 'react',
+      commonjs2: 'react',
+      amd: 'React',
+      root: 'React',
+    },
+    'react-dom': {
+      commonjs: 'react-dom',
+      commonjs2: 'react-dom',
+      amd: 'ReactDOM',
+      root: 'ReactDOM',
+    },
+    'styled-components': {
+      commonjs: 'styled-components',
+      commonjs2: 'styled-components',
+      amd: 'styled-components',
+    },
+  }, */
 };

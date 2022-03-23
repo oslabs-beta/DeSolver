@@ -1,7 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import Home from './pages/index';
-import Hero from './components/Hero/Hero'
+import Hero from './components/Hero/Hero';
+
 
 const App = () => {
   return (

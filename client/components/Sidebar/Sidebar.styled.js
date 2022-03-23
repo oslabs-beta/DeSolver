@@ -18,7 +18,6 @@ export const SidebarContainer = styled.aside`
   top: ${({ isOpen }) => (isOpen ? '0' : '-100%')};
 `
 
-
 export const CloseIcon = styled(FaTimes)`
   color: #fff;
 `
