@@ -7,8 +7,9 @@ const axios = require('axios');
 const db = require('../models/elephantConnect');
 const { Desolver } = require('./desolver');
 
-const typeDefs = gql`
+export const typeDefs = gql`
   type Query {
+    helloWorld: String
     hello: String
     getPopByCountry(country: String): Int
     getAllCountries: [Country]
@@ -58,8 +59,10 @@ const queryAllCountries = async (_, __, context, info, next) => {
   }
 };
 
-const resolvers = {
+export const resolvers = {
   Query: {
+    helloWorld: () => 'Hello World!',
+
     hello: Desolver.use(
       helloFirst,
       helloSecond,
@@ -134,7 +137,7 @@ const resolvers = {
 
 startApolloServer(typeDefs, resolvers);
 
-async function startApolloServer(typeDefs, resolvers) {
+export async function startApolloServer(typeDefs, resolvers) {
   const server = new ApolloServer({ typeDefs, resolvers });
   await server.start();
   server.applyMiddleware({ app });
