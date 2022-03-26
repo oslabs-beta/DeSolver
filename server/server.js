@@ -1,4 +1,5 @@
 require('dotenv').config();
+const process = require('process');
 const PORT = 3000;
 const { ApolloServer, gql } = require('apollo-server-express');
 const express = require('express');
@@ -7,7 +8,7 @@ const axios = require('axios');
 const db = require('../models/elephantConnect');
 const { Desolver } = require('./desolver');
 
-export const typeDefs = gql`
+const typeDefs = gql`
   type Query {
     helloWorld: String
     hello: String
@@ -40,11 +41,11 @@ const helloFirst = async (parent, args, context, info, next) => {
 };
 const helloSecond = async (parent, args, context, info, next) => {
   console.log('Hello Second!');
-  return next(null, 'I am second resolved!');
+  return next();
 };
 const helloThird = async (parent, args, context, info, next) => {
   console.log('Hello Third!');
-  return next(null, 'I am third resolved!');
+  return next();
 };
 
 // Desolver Test Middleware for getAllCountries root query
@@ -59,7 +60,7 @@ const queryAllCountries = async (_, __, context, info, next) => {
   }
 };
 
-export const resolvers = {
+const resolvers = {
   Query: {
     helloWorld: () => 'Hello World!',
 
@@ -135,14 +136,18 @@ export const resolvers = {
   },
 };
 
-startApolloServer(typeDefs, resolvers);
+if (process.env.NODE_ENV !== 'test') {
+  startApolloServer(typeDefs, resolvers, PORT);
+}
 
-export async function startApolloServer(typeDefs, resolvers) {
+async function startApolloServer(typeDefs, resolvers, apolloPort) {
   const server = new ApolloServer({ typeDefs, resolvers });
   await server.start();
   server.applyMiddleware({ app });
 
-  app.listen(PORT, () => {
-    console.log(`Server listening on port: ${PORT}...`);
+  return app.listen(apolloPort, () => {
+    console.log(`Server listening on port: ${apolloPort}...`);
   });
 }
+
+module.exports = { startApolloServer, typeDefs, resolvers }
