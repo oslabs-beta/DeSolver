@@ -38,6 +38,6 @@ describe('e2e demo', () => {
       .post('/graphql')
       .send(queryHelloDesolver);
     expect(response.errors).toBeUndefined();
-    expect(response.body.data?.queryHelloDesolver).toBe('Hello Final!');
+    expect(response.body.data?.hello).toBe('Hello Final!');
   });
 });
