@@ -6,7 +6,7 @@ export type Resolver = (
   next: () => void
 ) => unknown;
 
-export type ResolverWrapper = (
+export type ResolverWrapper = ( 
   parent: Record<string | number | symbol, unknown>,
   args: Record<string, unknown>,
   context: Record<string, unknown>,
