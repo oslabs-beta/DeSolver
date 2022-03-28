@@ -150,4 +150,4 @@ async function startApolloServer(typeDefs, resolvers, apolloPort) {
   });
 }
 
-module.exports = { startApolloServer, typeDefs, resolvers }
+module.exports = { startApolloServer, typeDefs, resolvers };
