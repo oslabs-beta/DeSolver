@@ -5,8 +5,8 @@ const { ApolloServer, gql } = require('apollo-server-express');
 const express = require('express');
 const app = express();
 const axios = require('axios');
-const db = require('../models/elephantConnect');
-const { Desolver } = require('./desolver');
+const db = require('./models/elephantConnect');
+const { Desolver } = require('./server/desolver');
 
 const typeDefs = gql`
   type Query {

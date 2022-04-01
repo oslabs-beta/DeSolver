@@ -1,9 +1,9 @@
-export type Resolver = (
+export type ResolverFragment = (
   parent: Record<string, unknown>,
   args: Record<string, unknown>,
   context: Record<string, unknown>,
   info: Record<string, unknown>,
-  next: () => void
+  next?: <T>(err?: string, resolvedObject?: T) => void
 ) => unknown;
 
 export type ResolverWrapper = ( 
@@ -18,8 +18,12 @@ export interface ResolvedObject {
   value: unknown;
 }
 
+export interface Resolvers {
+  [index: string]: {[index: string] : ResolverFragment}
+}
+
 export class Desolver {
-  public static use(...resolvers: Resolver[]): ResolverWrapper {
+  public static use(...resolvers: ResolverFragment[]): ResolverWrapper {
     return async (
       parent: Record<string, unknown>,
       args: Record<string, unknown>,
@@ -32,7 +36,7 @@ export class Desolver {
   }
 
   private hasNext: number = 0;
-  private pipeline: Resolver[];
+  private pipeline: ResolverFragment[];
   private resolvedObject: ResolvedObject = { resolved: false, value: null }
 
   constructor(
@@ -44,7 +48,7 @@ export class Desolver {
     this.next = this.next.bind(this);
   }
 
-  public composePipeline(...resolvers: Resolver[]): unknown {
+  public composePipeline(...resolvers: ResolverFragment[]): unknown {
     this.pipeline = resolvers;
     return this.execute();
   }
