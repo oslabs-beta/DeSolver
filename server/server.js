@@ -7,7 +7,6 @@ const app = express();
 const axios = require('axios');
 const db = require('../models/elephantConnect');
 const { Desolver } = require('./desolver');
-const e = require('express');
 
 const typeDefs = gql`
   type Query {
@@ -36,15 +35,22 @@ const typeDefs = gql`
 `;
 
 // Desolver Test Middleware for hello root query
-const helloFirst = async (parent, args, context, info, next) => {
+const helloFirst = async (parent, args, context, info, next, escapeHatch) => {
   console.log('Hello First!');
   return next();
 };
-const helloSecond = async (parent, args, context, info, next) => {
-  console.log('Hello Second!');
-  return next();
+const helloSecond = async (parent, args, context, info, next, escapeHatch) => {
+  console.log('Hello Second before try/catch!');
+  try {
+    console.log('Hello Second!');
+    // return escapeHatch();
+    // console.log('escapeHatch complete!');
+    return next();
+  } catch (error) {
+    return error;
+  }
 };
-const helloThird = async (parent, args, context, info, next) => {
+const helloThird = async (parent, args, context, info, next, escapeHatch) => {
   console.log('Hello Third!');
   return next();
 };

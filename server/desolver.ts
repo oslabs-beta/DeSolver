@@ -3,7 +3,8 @@ export type Resolver = (
   args: Record<string, unknown>,
   context: Record<string, unknown>,
   info: Record<string, unknown>,
-  next: () => void
+  escapeHatch: () => unknown,
+  next: () => unknown
 ) => unknown;
 
 export type ResolverWrapper = ( 
@@ -48,17 +49,18 @@ export class Desolver {
     public info: Record<string, unknown>
   ) {
     this.next = this.next.bind(this);
+    this.escapeHatch = this.escapeHatch.bind(this)
   }
 
   // Consider refactoring the below using the 'cause' proptery in custom error types
   // Consider own Error class to differentiate errors? Is this needed?  
-  public errorLogger(error: any): unknown {
+  public errorLogger(error: any): any {
     let errorObj = {
       'Error': error.toString(),
       'Error Name': error.name,
       'Error Message': error.message,
     }
-    throw new Error(`failed to resolve ${this.pipeline[this.hasNext]}: ${errorObj}`)
+    throw new Error(`failed to resolve ${this.pipeline[this.hasNext]}: ${errorObj}`, {cause: error} )
     // ^ how can I refacor the above to include multiple error parameters, Error(message, options)
   }
 
@@ -76,6 +78,7 @@ export class Desolver {
           this.context,
           this.info,
           this.next,
+          this.escapeHatch
         );
       }
       // "Catch clause variable type annotation must be 'any' or 'unknown' if specified."
@@ -88,12 +91,22 @@ export class Desolver {
       this.args,
       this.context,
       this.info,
-      this.next
+      this.next,
+      this.escapeHatch
     );
   }
 
-  public next(): number {
+  public next(): unknown {
+    // if (args) {
+    //   return this.hasNext += 1
+    // }
     return this.hasNext += 1;
   }
 
+  public escapeHatch(): unknown {
+    // this.hasNext = this.pipeline.length
+    console.log('REACHED ESCAPE HATCH!!!')
+    return
+    // return this.hasNext = this.pipeline.length + 1
+  }
 }
