@@ -13,10 +13,16 @@ export type ResolverWrapper = (
   info: Record<string, unknown>
 ) => unknown | Promise<unknown>;
 
-export interface ResolvedObject {
-  resolved: boolean;
-  value: unknown;
-}
+// export interface ResolvedObject {
+//   resolved: boolean;
+//   value: unknown;
+// }
+
+// NOTES TO SELF: 
+// recursive execute function 
+// base case = received expected value back (expexted Type only?)
+// err handling with iterative solution first
+// how to catch the errors iteratively first before recursion 
 
 export class Desolver {
   public static use(...resolvers: Resolver[]): ResolverWrapper {
@@ -32,8 +38,8 @@ export class Desolver {
   }
 
   private hasNext: number = 0;
-  private pipeline: Resolver[];
-  private resolvedObject: ResolvedObject = { resolved: false, value: null }
+  private pipeline!: Resolver[];
+  // private resolvedObject: ResolvedObject = { resolved: false, value: null }
 
   constructor(
     public parent: Record<string, unknown>,
@@ -44,45 +50,50 @@ export class Desolver {
     this.next = this.next.bind(this);
   }
 
+  // Consider refactoring the below using the 'cause' proptery in custom error types
+  // Consider own Error class to differentiate errors? Is this needed?  
+  public errorLogger(error: any): unknown {
+    let errorObj = {
+      'Error': error.toString(),
+      'Error Name': error.name,
+      'Error Message': error.message,
+    }
+    throw new Error(`failed to resolve ${this.pipeline[this.hasNext]}: ${errorObj}`)
+    // ^ how can I refacor the above to include multiple error parameters, Error(message, options)
+  }
+
   public composePipeline(...resolvers: Resolver[]): unknown {
     this.pipeline = resolvers;
     return this.execute();
   }
 
   private execute(): unknown {
-    while (this.hasNext <= this.pipeline.length - 1) {
-      if (this.resolvedObject.resolved) return this.resolvedObject.value;
-
-      if (this.hasNext === this.pipeline.length - 1) {
-        return this.pipeline[this.hasNext](
+    while (this.hasNext < this.pipeline.length - 1) {
+      try {
+        this.pipeline[this.hasNext](
           this.parent,
           this.args,
           this.context,
           this.info,
-          this.next
+          this.next,
         );
       }
-
-      this.pipeline[this.hasNext](
-        this.parent,
-        this.args,
-        this.context,
-        this.info,
-        this.next
-      );
+      // "Catch clause variable type annotation must be 'any' or 'unknown' if specified."
+      catch (error: any) {
+        return this.errorLogger(error)
+      }
     }
+    return this.pipeline[this.hasNext](
+      this.parent,
+      this.args,
+      this.context,
+      this.info,
+      this.next
+    );
   }
 
-  public next<T>(err?: string, resolveValue?: T ): void | T {
-    try {
-      if (err) throw new Error(err)
-      if (resolveValue) {
-        this.resolvedObject.resolved = true;
-        return this.resolvedObject.value = resolveValue;
-      };
-      this.hasNext += 1;
-    } catch (error: unknown) {
-      throw error;
-    }
+  public next(): number {
+    return this.hasNext += 1;
   }
+
 }
