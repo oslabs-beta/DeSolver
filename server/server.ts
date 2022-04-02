@@ -1,4 +1,5 @@
 import dotenv from 'dotenv'
+dotenv.config()
 import { ApolloServer, gql } from 'apollo-server-express'
 import { DocumentNode } from 'graphql'
 import express from 'express'
@@ -6,7 +7,6 @@ import axios from 'axios'
 import db from '../models/elephantConnect'
 import { Desolver, ResolverFragment, Resolvers } from './desolver'
 
-dotenv.config()
 const app = express();
 const PORT = 3000;
 
