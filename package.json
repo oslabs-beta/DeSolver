@@ -10,7 +10,8 @@
     "lint": "eslint --ext .jsx --ext .js --ext .ts",
     "test": "jest",
     "prepare": "husky install",
-    "desolve": "nodemon server/server.js & tsc -w server/desolver.ts"
+    "desolve": "nodemon server/server.js & tsc -w server/desolver.ts",
+    "desolve:server": "npx ts-node server/server.ts"
   },
   "repository": {
     "type": "git",

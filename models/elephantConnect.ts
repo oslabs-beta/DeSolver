@@ -1,6 +1,6 @@
 import { Pool, QueryResult, QueryArrayResult } from 'pg'
 
-type Callback = (err: Error, result: QueryResult<any>) => any
+type Callback<T> = (err: Error, result: QueryResult<T[]>) => T[]
 
 const PG_URI = process.env.DB_elephant;
 
@@ -14,7 +14,7 @@ pool.on('connect', () => {
 
 export = {
   PG_URI,
-  query: (text: string, params?: string[], callback?: Callback): any => {
+  query: (text: string, params?: string[], callback?: Callback<any>): void => {
     console.log('executed query', text);
     return pool.query(text, params, callback);
   },

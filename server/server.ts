@@ -4,6 +4,7 @@ import { ApolloServer, gql } from 'apollo-server-express'
 import { DocumentNode } from 'graphql'
 import express from 'express'
 import axios from 'axios'
+import { QueryArrayResult } from 'pg'
 import db from '../models/elephantConnect'
 import { Desolver, ResolverFragment, Resolvers } from './desolver'
 
@@ -55,7 +56,7 @@ const queryAllCountries: ResolverFragment = async (_, __, context, info, next) =
   try {
     const query = `
     SELECT * FROM countries;`;
-    const allCountries = await db.query(query);
+    const allCountries = await db.query(query) as unknown as QueryArrayResult;
     console.log('did i query?')
     return next(null, allCountries.rows);
   } catch (err) {
@@ -129,7 +130,7 @@ const resolvers: Resolvers = {
       try {
         const query = `
         SELECT * FROM locations;`;
-        const allAddresses = await db.query(query);
+        const allAddresses = await db.query(query) as unknown as QueryArrayResult;
         console.log(allAddresses.rows);
         return allAddresses.rows;
       } catch (err) {
@@ -153,4 +154,4 @@ async function startApolloServer(typeDefs: DocumentNode, resolvers: Resolvers, a
   });
 }
 
-module.exports = { startApolloServer, typeDefs, resolvers };
+export = { startApolloServer, typeDefs, resolvers };
