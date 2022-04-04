@@ -1,7 +1,7 @@
 import dotenv from 'dotenv'
 dotenv.config()
 import { ApolloServer, gql } from 'apollo-server-express'
-import { DocumentNode } from 'graphql'
+import { DocumentNode, DefinitionNode } from 'graphql'
 import express from 'express'
 import axios from 'axios'
 import { QueryArrayResult } from 'pg'
@@ -9,7 +9,7 @@ import db from '../models/elephantConnect'
 import { Desolver, ResolverFragment, Resolvers } from './desolver'
 
 const app = express();
-const PORT = 3000;
+const PORT = 8080;
 
 const typeDefs = gql`
   type Query {
@@ -40,15 +40,15 @@ const typeDefs = gql`
 // Desolver Test Middleware for hello root query
 const helloFirst: ResolverFragment = async (parent, args, context, info, next) => {
   console.log('Hello First!');
-  return next();
+  return next<unknown>(null, 'I am resolved first!');
 };
 const helloSecond: ResolverFragment = async (parent, args, context, info, next) => {
   console.log('Hello Second!');
-  return next();
+  return next<unknown>(null, 2);
 };
 const helloThird: ResolverFragment = async (parent, args, context, info, next) => {
   console.log('Hello Third!');
-  return next();
+  return next()
 };
 
 // Desolver Test Middleware for getAllCountries root query

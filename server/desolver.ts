@@ -77,7 +77,9 @@ export class Desolver {
     }
   }
 
-  public next<T>(err?: string, resolveValue?: T ): void | T {
+  public next(): void
+  public next(err?: string): void
+  public next<T>(err?: string, resolveValue?: T, final?: number): void | T {
     try {
       if (err) throw new Error(err)
       if (resolveValue) {

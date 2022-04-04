@@ -1,4 +1,4 @@
-import { Pool, QueryResult, QueryArrayResult } from 'pg'
+import { Pool, QueryResult, QueryArrayResult, Query } from 'pg'
 
 type Callback<T> = (err: Error, result: QueryResult<T[]>) => T[]
 
