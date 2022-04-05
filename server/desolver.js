@@ -37,15 +37,25 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 exports.__esModule = true;
 exports.Desolver = void 0;
+// export interface ResolvedObject {
+//   resolved: boolean;
+//   value: unknown;
+// }
+// NOTES TO SELF: 
+// recursive execute function 
+// base case = received expected value back (expexted Type only?)
+// err handling with iterative solution first
+// how to catch the errors iteratively first before recursion 
 var Desolver = /** @class */ (function () {
+    // private resolvedObject: ResolvedObject = { resolved: false, value: null }
     function Desolver(parent, args, context, info) {
         this.parent = parent;
         this.args = args;
         this.context = context;
         this.info = info;
         this.hasNext = 0;
-        this.resolvedObject = { resolved: false, value: null };
         this.next = this.next.bind(this);
+        // this.escapeHatch = this.escapeHatch.bind(this)
     }
     Desolver.use = function () {
         var _this = this;
@@ -65,6 +75,17 @@ var Desolver = /** @class */ (function () {
             });
         }); };
     };
+    // Consider refactoring the below using the 'cause' proptery in custom error types
+    // Consider own Error class to differentiate errors? Is this needed?  
+    Desolver.prototype.errorLogger = function (error) {
+        var errorObj = {
+            'Error': error.toString(),
+            'Error Name': error.name,
+            'Error Message': error.message
+        };
+        throw new Error("failed to resolve ".concat(this.pipeline[this.hasNext], ": ").concat(errorObj));
+        // ^ how can I refacor the above to include multiple error parameters, Error(message, options)
+    };
     Desolver.prototype.composePipeline = function () {
         var resolvers = [];
         for (var _i = 0; _i < arguments.length; _i++) {
@@ -74,29 +95,29 @@ var Desolver = /** @class */ (function () {
         return this.execute();
     };
     Desolver.prototype.execute = function () {
-        while (this.hasNext <= this.pipeline.length - 1) {
-            if (this.resolvedObject.resolved)
-                return this.resolvedObject.value;
-            if (this.hasNext === this.pipeline.length - 1) {
-                return this.pipeline[this.hasNext](this.parent, this.args, this.context, this.info, this.next);
+        while (this.hasNext < this.pipeline.length - 1) {
+            console.log('this.hasNext:', this.hasNext, 'pipe length', this.pipeline.length);
+            try {
+                this.pipeline[this.hasNext](this.parent, this.args, this.context, this.info, this.next, this.escapeHatch);
             }
-            this.pipeline[this.hasNext](this.parent, this.args, this.context, this.info, this.next);
+            // "Catch clause variable type annotation must be 'any' or 'unknown' if specified."
+            catch (error) {
+                return this.errorLogger(error);
+            }
         }
+        return this.pipeline[this.hasNext](this.parent, this.args, this.context, this.info, this.next, this.escapeHatch);
     };
-    Desolver.prototype.next = function (err, resolveValue) {
-        try {
-            if (err)
-                throw new Error(err);
-            if (resolveValue) {
-                this.resolvedObject.resolved = true;
-                return this.resolvedObject.value = resolveValue;
-            }
-            ;
-            this.hasNext += 1;
-        }
-        catch (error) {
-            throw error;
-        }
+    Desolver.prototype.next = function () {
+        // if (args) {
+        //   return this.hasNext += 1
+        // }
+        return this.hasNext += 1;
+    };
+    Desolver.prototype.escapeHatch = function () {
+        // this.hasNext = this.pipeline.length
+        console.log('REACHED ESCAPE HATCH!!!');
+        return;
+        // return this.hasNext = this.pipeline.length + 1
     };
     return Desolver;
 }());

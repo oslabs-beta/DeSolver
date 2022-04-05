@@ -41,9 +41,11 @@ const helloFirst = async (parent, args, context, info, next, escapeHatch) => {
 };
 const helloSecond = async (parent, args, context, info, next, escapeHatch) => {
   console.log('Hello Second before try/catch!');
+  escapeHatch();
+  return next();
   try {
     console.log('Hello Second!');
-    // return escapeHatch();
+    // escapeHatch();
     // console.log('escapeHatch complete!');
     return next();
   } catch (error) {

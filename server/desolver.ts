@@ -3,7 +3,7 @@ export type Resolver = (
   args: Record<string, unknown>,
   context: Record<string, unknown>,
   info: Record<string, unknown>,
-  escapeHatch: () => unknown,
+  escapeHatch: () => any,
   next: () => unknown
 ) => unknown;
 
@@ -49,7 +49,7 @@ export class Desolver {
     public info: Record<string, unknown>
   ) {
     this.next = this.next.bind(this);
-    this.escapeHatch = this.escapeHatch.bind(this)
+    // this.escapeHatch = this.escapeHatch.bind(this)
   }
 
   // Consider refactoring the below using the 'cause' proptery in custom error types
@@ -60,7 +60,7 @@ export class Desolver {
       'Error Name': error.name,
       'Error Message': error.message,
     }
-    throw new Error(`failed to resolve ${this.pipeline[this.hasNext]}: ${errorObj}`, {cause: error} )
+    throw new Error(`failed to resolve ${this.pipeline[this.hasNext]}: ${errorObj}`)
     // ^ how can I refacor the above to include multiple error parameters, Error(message, options)
   }
 
@@ -71,6 +71,7 @@ export class Desolver {
 
   private execute(): unknown {
     while (this.hasNext < this.pipeline.length - 1) {
+      console.log('this.hasNext:',this.hasNext, 'pipe length',this.pipeline.length)
       try {
         this.pipeline[this.hasNext](
           this.parent,
@@ -103,7 +104,7 @@ export class Desolver {
     return this.hasNext += 1;
   }
 
-  public escapeHatch(): unknown {
+  public escapeHatch(): void {
     // this.hasNext = this.pipeline.length
     console.log('REACHED ESCAPE HATCH!!!')
     return
