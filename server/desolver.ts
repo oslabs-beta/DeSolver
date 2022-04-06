@@ -35,6 +35,18 @@ export class Desolver {
     };
   }
 
+  public static useSync(...resolvers: ResolverFragment[]): ResolverWrapper {
+    return  (
+      parent: Record<string, unknown>,
+      args: Record<string, unknown>,
+      context: Record<string, unknown>,
+      info: Record<string, unknown>
+    ): unknown => {
+        const desolver = new Desolver(parent, args, context, info);
+        return desolver.composePipeline(...resolvers);
+    };
+  }
+
   private hasNext: number = 0;
   private pipeline: ResolverFragment[];
   private resolvedObject: ResolvedObject = { resolved: false, value: null }

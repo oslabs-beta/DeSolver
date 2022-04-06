@@ -1,7 +1,7 @@
 import dotenv from 'dotenv'
 dotenv.config()
 import { ApolloServer, gql } from 'apollo-server-express'
-import { DocumentNode, DefinitionNode } from 'graphql'
+import { DocumentNode, DefinitionNode, Source, Lexer, parse, parseType, visit, BREAK, print } from 'graphql'
 import express from 'express'
 import axios from 'axios'
 import { QueryArrayResult } from 'pg'
