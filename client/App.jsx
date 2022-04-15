@@ -10,7 +10,7 @@ const App = () => {
       <Header />
       <Sandbox />
     </>
-  )
+  );
 };
 
 export default App;
