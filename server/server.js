@@ -40,13 +40,10 @@ const helloFirst = async (parent, args, context, info, next, escapeHatch) => {
   return next();
 };
 const helloSecond = async (parent, args, context, info, next, escapeHatch) => {
-  console.log('Hello Second before try/catch!');
-  escapeHatch();
-  return next();
   try {
     console.log('Hello Second!');
-    // escapeHatch();
-    // console.log('escapeHatch complete!');
+    const result = 'RESULT FROM helloSecond';
+    await escapeHatch(result);
     return next();
   } catch (error) {
     return error;

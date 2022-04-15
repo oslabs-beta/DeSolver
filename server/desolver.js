@@ -37,25 +37,16 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 exports.__esModule = true;
 exports.Desolver = void 0;
-// export interface ResolvedObject {
-//   resolved: boolean;
-//   value: unknown;
-// }
-// NOTES TO SELF: 
-// recursive execute function 
-// base case = received expected value back (expexted Type only?)
-// err handling with iterative solution first
-// how to catch the errors iteratively first before recursion 
 var Desolver = /** @class */ (function () {
-    // private resolvedObject: ResolvedObject = { resolved: false, value: null }
     function Desolver(parent, args, context, info) {
         this.parent = parent;
         this.args = args;
         this.context = context;
         this.info = info;
         this.hasNext = 0;
+        this.escapeDesolver = { bool: false, resolveVal: null };
         this.next = this.next.bind(this);
-        // this.escapeHatch = this.escapeHatch.bind(this)
+        this.escapeHatch = this.escapeHatch.bind(this);
     }
     Desolver.use = function () {
         var _this = this;
@@ -95,29 +86,44 @@ var Desolver = /** @class */ (function () {
         return this.execute();
     };
     Desolver.prototype.execute = function () {
-        while (this.hasNext < this.pipeline.length - 1) {
-            console.log('this.hasNext:', this.hasNext, 'pipe length', this.pipeline.length);
-            try {
-                this.pipeline[this.hasNext](this.parent, this.args, this.context, this.info, this.next, this.escapeHatch);
-            }
-            // "Catch clause variable type annotation must be 'any' or 'unknown' if specified."
-            catch (error) {
-                return this.errorLogger(error);
-            }
-        }
-        return this.pipeline[this.hasNext](this.parent, this.args, this.context, this.info, this.next, this.escapeHatch);
+        return __awaiter(this, void 0, void 0, function () {
+            var error_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!(this.hasNext < this.pipeline.length - 1)) return [3 /*break*/, 5];
+                        console.log('this.hasNext:', this.hasNext, 'pipe length', this.pipeline.length);
+                        if (this.escapeDesolver.bool === true) {
+                            console.log("\n          Reached conditional for escapeDesolver.\n          Returning: ".concat(this.escapeDesolver.resolveVal));
+                            return [2 /*return*/, this.escapeDesolver.resolveVal];
+                        }
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, this.pipeline[this.hasNext](this.parent, this.args, this.context, this.info, this.next, this.escapeHatch)];
+                    case 2:
+                        _a.sent();
+                        return [3 /*break*/, 4];
+                    case 3:
+                        error_1 = _a.sent();
+                        return [2 /*return*/, this.errorLogger(error_1)];
+                    case 4: return [3 /*break*/, 0];
+                    case 5: return [4 /*yield*/, this.pipeline[this.hasNext](this.parent, this.args, this.context, this.info, this.next, this.escapeHatch)];
+                    case 6: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
     };
     Desolver.prototype.next = function () {
-        // if (args) {
-        //   return this.hasNext += 1
-        // }
         return this.hasNext += 1;
     };
-    Desolver.prototype.escapeHatch = function () {
-        // this.hasNext = this.pipeline.length
-        console.log('REACHED ESCAPE HATCH!!!');
+    Desolver.prototype.escapeHatch = function (args) {
+        console.log('REACHED ESCAPE HATCH, args = ', args);
+        this.escapeDesolver.bool = true;
+        console.log('new boolean value : ', this.escapeDesolver.bool);
+        this.escapeDesolver.resolveVal = args;
+        console.log('return value out of escapeHatch: ', this.escapeDesolver.resolveVal);
         return;
-        // return this.hasNext = this.pipeline.length + 1
     };
     return Desolver;
 }());

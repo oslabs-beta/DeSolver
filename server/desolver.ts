@@ -3,8 +3,8 @@ export type Resolver = (
   args: Record<string, unknown>,
   context: Record<string, unknown>,
   info: Record<string, unknown>,
-  escapeHatch: () => any,
-  next: () => unknown
+  next: () => unknown,
+  escapeHatch: (args: any) => unknown
 ) => unknown;
 
 export type ResolverWrapper = ( 
@@ -14,16 +14,10 @@ export type ResolverWrapper = (
   info: Record<string, unknown>
 ) => unknown | Promise<unknown>;
 
-// export interface ResolvedObject {
-//   resolved: boolean;
-//   value: unknown;
-// }
-
-// NOTES TO SELF: 
-// recursive execute function 
-// base case = received expected value back (expexted Type only?)
-// err handling with iterative solution first
-// how to catch the errors iteratively first before recursion 
+export type EscapeDesolver = {
+  bool: boolean;
+  resolveVal: null;
+}
 
 export class Desolver {
   public static use(...resolvers: Resolver[]): ResolverWrapper {
@@ -40,16 +34,16 @@ export class Desolver {
 
   private hasNext: number = 0;
   private pipeline!: Resolver[];
-  // private resolvedObject: ResolvedObject = { resolved: false, value: null }
+  private escapeDesolver: EscapeDesolver = {bool: false, resolveVal: null}
 
   constructor(
     public parent: Record<string, unknown>,
     public args: Record<string, unknown>,
     public context: Record<string, unknown>,
-    public info: Record<string, unknown>
+    public info: Record<string, unknown>,
   ) {
     this.next = this.next.bind(this);
-    // this.escapeHatch = this.escapeHatch.bind(this)
+    this.escapeHatch = this.escapeHatch.bind(this)
   }
 
   // Consider refactoring the below using the 'cause' proptery in custom error types
@@ -69,11 +63,20 @@ export class Desolver {
     return this.execute();
   }
 
-  private execute(): unknown {
+  private async execute(): Promise<unknown> {
     while (this.hasNext < this.pipeline.length - 1) {
       console.log('this.hasNext:',this.hasNext, 'pipe length',this.pipeline.length)
+      
+      if (this.escapeDesolver.bool === true) {
+        console.log(`
+          Reached conditional for escapeDesolver.
+          Returning: ${this.escapeDesolver.resolveVal}`
+        )
+        return this.escapeDesolver.resolveVal
+      }
+      
       try {
-        this.pipeline[this.hasNext](
+        await this.pipeline[this.hasNext](
           this.parent,
           this.args,
           this.context,
@@ -82,12 +85,12 @@ export class Desolver {
           this.escapeHatch
         );
       }
-      // "Catch clause variable type annotation must be 'any' or 'unknown' if specified."
       catch (error: any) {
         return this.errorLogger(error)
       }
     }
-    return this.pipeline[this.hasNext](
+
+    return await this.pipeline[this.hasNext](
       this.parent,
       this.args,
       this.context,
@@ -98,16 +101,17 @@ export class Desolver {
   }
 
   public next(): unknown {
-    // if (args) {
-    //   return this.hasNext += 1
-    // }
     return this.hasNext += 1;
   }
 
-  public escapeHatch(): void {
-    // this.hasNext = this.pipeline.length
-    console.log('REACHED ESCAPE HATCH!!!')
-    return
-    // return this.hasNext = this.pipeline.length + 1
+  public escapeHatch(args: any): unknown {
+    console.log('REACHED ESCAPE HATCH, args = ', args);
+
+    this.escapeDesolver.bool = true;
+    console.log('new boolean value : ', this.escapeDesolver.bool)
+
+    this.escapeDesolver.resolveVal = args;
+    console.log('return value out of escapeHatch: ', this.escapeDesolver.resolveVal)
+    return 
   }
 }
