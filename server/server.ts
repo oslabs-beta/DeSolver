@@ -1,15 +1,15 @@
-import dotenv from 'dotenv'
+import dotenv from 'dotenv';
 dotenv.config()
-import { ApolloServer, gql } from 'apollo-server-express'
-import { DocumentNode, DefinitionNode, Source, Lexer, parse, parseType, visit, BREAK, print } from 'graphql'
-import express from 'express'
-import axios from 'axios'
+import { ApolloServer, gql } from 'apollo-server-express';
+import { DocumentNode } from 'graphql';
+import express from 'express';
+import axios, { AxiosResponse } from 'axios';
 import { QueryArrayResult } from 'pg'
 import db from '../models/elephantConnect'
 import { Desolver, ResolverFragment, Resolvers } from './desolver'
 
 const app = express();
-const PORT = 8080;
+const PORT = 3000;
 
 const typeDefs = gql`
   type Query {
@@ -60,7 +60,7 @@ const queryAllCountries: ResolverFragment = async (_, __, context, info, next) =
     console.log('did i query?')
     return next(null, allCountries.rows);
   } catch (err) {
-    console.log('error in getAllCountries: ', err);
+    throw new Error('Error in queryAllCountries')
   }
 };
 
@@ -68,19 +68,14 @@ const resolvers: Resolvers = {
   Query: {
     helloWorld: () => 'Hello World!',
 
-    hello: Desolver.use(
-      helloFirst,
-      helloSecond,
-      helloThird,
-      (parent, args, context, info) => 'Hello Final!'
-    ),
+    hello: Desolver.useSync(helloFirst, helloSecond, helloThird, (parent, args, context, info) => 'Hello Final!'),
 
-    getPopByCountry: async (parent, args, context, info) => {
+    getPopByCountry: Desolver.useSync(async (parent, args, context, info) => {
       try {
         const desolver = new Desolver(parent, args, context, info);
         return desolver.composePipeline(async (parent, args, context, info) => {
           const { country } = args;
-          const queryRes = await axios({
+          const queryRes: AxiosResponse = await axios({
             method: 'GET',
             url: 'https://world-population.p.rapidapi.com/population',
             params: { country_name: country },
@@ -90,24 +85,25 @@ const resolvers: Resolvers = {
                 '7f41d5564dmsh59dfbf8c3bf6336p160c99jsn22c3b8738e61',
             },
           });
-          const population = queryRes.data.body.population;
-          return population;
+          return queryRes.status >= 400 ? null : queryRes.data.body.population
+          // const population = queryRes.data.body.population;
+          // return population;
         });
       } catch (err) {
         console.log('error with getPopByCountry: ', err);
       }
-    },
+    }),
 
-    getAllCountries: Desolver.use(queryAllCountries),
+    getAllCountries: Desolver.useSync(queryAllCountries),
   },
 
   Country: {
-    population: async (parent, __, context, info) => {
+    population: Desolver.use(async (parent, __, context, info) => {
       console.log('in the population query');
       try {
         let name = parent.country_name;
         console.log('NAME in Population Query: ', name);
-        const queryRes = await axios({
+        const queryRes: AxiosResponse = await axios({
           method: 'GET',
           url: 'https://world-population.p.rapidapi.com/population',
           params: { country_name: name },
@@ -117,13 +113,13 @@ const resolvers: Resolvers = {
               '7f41d5564dmsh59dfbf8c3bf6336p160c99jsn22c3b8738e61',
           },
         });
-        console.log(queryRes.data);
-        const population = queryRes.data.body.population;
-        return { population };
+        return queryRes.status >= 400 ? {population: null} : {population: queryRes.data.body.population}
+        // const population = queryRes.data.body.population;
+        // return { population };
       } catch (err) {
-        console.log('error with getPopByCountry: ', err);
+        console.log('error with population: ', err);
       }
-    },
+    }),
   },
   Address: {
     address: async (_, __, context, info) => {
