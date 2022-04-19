@@ -64,7 +64,7 @@ export class Desolver {
   }
 
   private async execute(): Promise<unknown> {
-    while (this.hasNext < this.pipeline.length - 1) {
+    while (this.hasNext <= this.pipeline.length - 1) {
       console.log('this.hasNext:',this.hasNext, 'pipe length',this.pipeline.length)
       
       if (this.escapeDesolver.wasCalled === true) {
