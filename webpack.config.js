@@ -41,6 +41,10 @@ module.exports = {
         include: path.resolve(__dirname, "client"),
         use: ["style-loader", "css-loader", "postcss-loader"],
       },
+      {
+        test: /\.png/,
+        type: 'asset/resource'
+      },
     ],
   },
   devServer: {
