@@ -44,7 +44,7 @@ var Desolver = /** @class */ (function () {
         this.context = context;
         this.info = info;
         this.hasNext = 0;
-        this.escapeDesolver = { bool: false, resolveVal: null };
+        this.escapeDesolver = { wasCalled: false, resolveVal: null };
         this.next = this.next.bind(this);
         this.escapeHatch = this.escapeHatch.bind(this);
     }
@@ -93,8 +93,10 @@ var Desolver = /** @class */ (function () {
                     case 0:
                         if (!(this.hasNext < this.pipeline.length - 1)) return [3 /*break*/, 5];
                         console.log('this.hasNext:', this.hasNext, 'pipe length', this.pipeline.length);
-                        if (this.escapeDesolver.bool === true) {
+                        if (this.escapeDesolver.wasCalled === true) {
                             console.log("\n          Reached conditional for escapeDesolver.\n          Returning: ".concat(this.escapeDesolver.resolveVal));
+                            this.escapeDesolver.wasCalled = false;
+                            console.log('wasCalled updated, should be FALSE: ', this.escapeDesolver.wasCalled);
                             return [2 /*return*/, this.escapeDesolver.resolveVal];
                         }
                         _a.label = 1;
@@ -119,8 +121,8 @@ var Desolver = /** @class */ (function () {
     };
     Desolver.prototype.escapeHatch = function (args) {
         console.log('REACHED ESCAPE HATCH, args = ', args);
-        this.escapeDesolver.bool = true;
-        console.log('new boolean value : ', this.escapeDesolver.bool);
+        this.escapeDesolver.wasCalled = true;
+        console.log('new boolean value : ', this.escapeDesolver.wasCalled);
         this.escapeDesolver.resolveVal = args;
         console.log('return value out of escapeHatch: ', this.escapeDesolver.resolveVal);
         return;

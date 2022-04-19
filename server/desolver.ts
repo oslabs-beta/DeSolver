@@ -15,7 +15,7 @@ export type ResolverWrapper = (
 ) => unknown | Promise<unknown>;
 
 export type EscapeDesolver = {
-  bool: boolean;
+  wasCalled: boolean;
   resolveVal: null;
 }
 
@@ -34,7 +34,7 @@ export class Desolver {
 
   private hasNext: number = 0;
   private pipeline!: Resolver[];
-  private escapeDesolver: EscapeDesolver = {bool: false, resolveVal: null}
+  private escapeDesolver: EscapeDesolver = {wasCalled: false, resolveVal: null}
 
   constructor(
     public parent: Record<string, unknown>,
@@ -67,11 +67,13 @@ export class Desolver {
     while (this.hasNext < this.pipeline.length - 1) {
       console.log('this.hasNext:',this.hasNext, 'pipe length',this.pipeline.length)
       
-      if (this.escapeDesolver.bool === true) {
+      if (this.escapeDesolver.wasCalled === true) {
         console.log(`
           Reached conditional for escapeDesolver.
           Returning: ${this.escapeDesolver.resolveVal}`
         )
+        this.escapeDesolver.wasCalled = false
+        console.log('wasCalled updated, should be FALSE: ', this.escapeDesolver.wasCalled)
         return this.escapeDesolver.resolveVal
       }
       
@@ -107,8 +109,8 @@ export class Desolver {
   public escapeHatch(args: any): unknown {
     console.log('REACHED ESCAPE HATCH, args = ', args);
 
-    this.escapeDesolver.bool = true;
-    console.log('new boolean value : ', this.escapeDesolver.bool)
+    this.escapeDesolver.wasCalled = true;
+    console.log('new boolean value : ', this.escapeDesolver.wasCalled)
 
     this.escapeDesolver.resolveVal = args;
     console.log('return value out of escapeHatch: ', this.escapeDesolver.resolveVal)
