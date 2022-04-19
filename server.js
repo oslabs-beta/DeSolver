@@ -35,15 +35,21 @@ const typeDefs = gql`
 `;
 
 // Desolver Test Middleware for hello root query
-const helloFirst = async (parent, args, context, info, next) => {
+const helloFirst = async (parent, args, context, info, next, escapeHatch) => {
   console.log('Hello First!');
   return next();
 };
-const helloSecond = async (parent, args, context, info, next) => {
-  console.log('Hello Second!');
-  return next();
+const helloSecond = async (parent, args, context, info, next, escapeHatch) => {
+  try {
+    console.log('Hello Second!');
+    const result = 'RESULT FROM helloSecond';
+    await escapeHatch(result);
+    return next();
+  } catch (error) {
+    return error;
+  }
 };
-const helloThird = async (parent, args, context, info, next) => {
+const helloThird = async (parent, args, context, info, next, escapeHatch) => {
   console.log('Hello Third!');
   return next();
 };

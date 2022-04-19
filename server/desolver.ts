@@ -1,4 +1,4 @@
-import { createClient, RedisClientType } from 'redis';
+import { createClient, RedisClientType, RedisClientOptions } from 'redis';
 import { GraphQLResolveInfo } from 'graphql';
 
 export type DesolverFragment = (
@@ -6,7 +6,8 @@ export type DesolverFragment = (
   args: Record<string, unknown>,
   context: Record<string, unknown>,
   info: GraphQLResolveInfo,
-  next?: <T>(err?: string, resolvedObject?: T) => void
+  next: <T>(err?: string, resolvedObject?: T) => void,
+  escapeHatch: <T>(resolvedObject: T) => T | void
 ) => unknown | Promise<void | unknown>;
 
 export type ResolverWrapper = (
@@ -21,53 +22,33 @@ export interface ResolvedObject {
   value: unknown;
 }
 
+export interface DesolverCacheConfig extends RedisClientOptions {
+  cacheDesolver?: boolean;
+}
+
 export interface Resolvers {
   [index: string]: { [index: string]: DesolverFragment };
 }
 
 export class Desolver {
-  public static createDesolver() {
-    return [new Desolver(), new Desolver()];
-  }
-
-  public static use(...desolvers: DesolverFragment[]): ResolverWrapper {
-    return async (
-      parent: Record<string, unknown>,
-      args: Record<string, unknown>,
-      context: Record<string, unknown>,
-      info: GraphQLResolveInfo
-    ): Promise<unknown> => {
-      const desolver = new Desolver(parent, args, context, info);
-      return await desolver.composePipeline(...desolvers);
-    };
-  }
-
-  public static useSync(...desolvers: DesolverFragment[]): ResolverWrapper {
-    return (
-      parent: Record<string, unknown>,
-      args: Record<string, unknown>,
-      context: Record<string, unknown>,
-      info: GraphQLResolveInfo
-    ): unknown => {
-      const desolver = new Desolver(parent, args, context, info);
-      return desolver.composePipeline(...desolvers);
-    };
-  }
-
   private hasNext: number = 0;
-  private pipeline: DesolverFragment[];
-  private resolvedObject: ResolvedObject = { resolved: false, value: null };
-  private cache: RedisClientType = createClient();
+  private pipeline: DesolverFragment[] = [];
+  private cache: RedisClientType;
 
-  constructor(
-    public parent?: Record<string, unknown>,
-    public args?: Record<string, unknown>,
-    public context?: Record<string, unknown>,
-    public info?: GraphQLResolveInfo
-  ) {
-    this.next = this.next.bind(this);
-    this.cache.connect();
-    this.cache.on('error', (err) => console.log('Redis Client Error', err));
+  constructor(public cacheConfig?: DesolverCacheConfig) {
+    if (this.cacheConfig) {
+      this.cache = createClient(this.cacheConfig);
+      this.cache.connect();
+      this.cache.on('error', (err) => console.log('Redis Client Error', err));
+    } else {
+      this.cache = createClient();
+      this.cache.connect();
+      this.cache.on('error', (err) => console.log('Redis Client Error', err));
+    }
+  }
+
+  public use(...desolvers: DesolverFragment[]): void {
+    this.pipeline.push(...desolvers);
   }
 
   public useRoute(...desolvers: DesolverFragment[]): ResolverWrapper {
@@ -87,7 +68,7 @@ export class Desolver {
     };
   }
 
-  public async composePipeline(
+  private async composePipeline(
     parent: Record<string, unknown>,
     args: Record<string, unknown>,
     context: Record<string, unknown>,
@@ -100,15 +81,15 @@ export class Desolver {
       return JSON.parse(cachedValue);
     }
     console.log('Cache Miss, executing pipeline');
-    this.pipeline = desolvers;
     const resolvedValue = await this.execute(
       parent,
       args,
       context,
       info,
+      ...this.pipeline,
       ...desolvers
     );
-    setCachedValue(this.cache, info, resolvedValue);
+    await setCachedValue(this.cache, info, resolvedValue);
     return resolvedValue;
   }
 
@@ -121,25 +102,37 @@ export class Desolver {
   ): Promise<void | unknown> {
     let nextIdx = 0;
 
+    for (const desolverFragment of desolvers) {
+      if (typeof desolverFragment !== 'function') {
+        throw new Error('Desolver Fragment must be a function.');
+      }
+    }
+
     const resolvedObject: ResolvedObject = { resolved: false, value: null };
 
-    function next<T>(err?: string, resolvedValue?: T): void | T {
+    const next = <T>(err?: string, resolvedValue?: T): void | T => {
       try {
-        if(err) throw new Error(err);
+        if (err) throw new Error(err);
         if (resolvedValue) {
-          resolvedObject.resolved = true
-          return resolvedObject.value = resolvedValue
+          resolvedObject.resolved = true;
+          return (resolvedObject.value = resolvedValue);
         }
         nextIdx += 1;
       } catch (e) {
-        throw new Error(err)
+        throw new Error(err);
+      }
+    }
+
+    const escapeHatch = <T>(resolvedValue: T): void | T => {
+      try {
+        resolvedObject.resolved = true;
+        return (resolvedObject.value = resolvedValue);
+      } catch (e) {
+        throw new Error(e.message);
       }
     }
 
     while (nextIdx <= desolvers.length - 1) {
-      if (typeof desolvers[nextIdx] !== 'function')
-        throw new Error('Desolver Fragment must be a function.');
-
       if (resolvedObject.resolved) return resolvedObject.value;
 
       if (nextIdx === desolvers.length - 1) {
@@ -149,55 +142,23 @@ export class Desolver {
           context,
           info,
           next,
+          escapeHatch
         );
       }
 
-      await desolvers[nextIdx](
-        parent,
-        args,
-        context,
-        info,
-        next,
-      );
+      await desolvers[nextIdx](parent, args, context, info, next, escapeHatch);
     }
-
-    // while (this.hasNext <= this.pipeline.length - 1) {
-    //   if (typeof this.pipeline[this.hasNext] !== 'function')
-    //     throw new Error('Desolver Fragment must be a function.');
-
-    //   if (this.resolvedObject.resolved) return this.resolvedObject.value;
-
-    //   if (this.hasNext === this.pipeline.length - 1) {
-    //     return await this.pipeline[this.hasNext](
-    //       this.parent,
-    //       this.args,
-    //       this.context,
-    //       this.info,
-    //       this.next
-    //     );
-    //   }
-
-    //   await this.pipeline[this.hasNext](
-    //     this.parent,
-    //     this.args,
-    //     this.context,
-    //     this.info,
-    //     this.next
-    //   );
-    // }
   }
 
-  public next<T>(err?: string, resolveValue?: T): void | T {
-    try {
-      if (err) throw new Error(err);
-      if (resolveValue) {
-        this.resolvedObject.resolved = true;
-        return (this.resolvedObject.value = resolveValue);
-      }
-      this.hasNext += 1;
-    } catch (error: unknown) {
-      throw error;
-    }
+  private errorLogger(error: any): void {
+    let errorObj = {
+      Error: error.toString(),
+      'Error Name': error.name,
+      'Error Message': error.message,
+    };
+    throw new Error(
+      `failed to resolve ${this.pipeline[this.hasNext]}: ${errorObj}`
+    );
   }
 }
 
@@ -214,13 +175,15 @@ async function setCachedValue(
   info: GraphQLResolveInfo,
   resolvedValue: unknown
 ): Promise<void> {
-  console.log('Setting Resolved Value to the Cache');
+  // console.log('Setting Resolved Value to the Cache');
   await cache.hSet(
     'Query',
     JSON.stringify(info.path),
     JSON.stringify(resolvedValue)
   );
 }
+
+/* Alternative Iterations of the getCache and setCache functions
 
 function getCache(cache: RedisClientType): DesolverFragment {
   return async function (parent, args, context, info, next) {
@@ -244,3 +207,4 @@ function setCache(
     return next(null, resolvedValue);
   };
 }
+*/
