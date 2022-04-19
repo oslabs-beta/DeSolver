@@ -6,7 +6,8 @@ import express from 'express';
 import axios, { AxiosResponse } from 'axios';
 import { QueryArrayResult } from 'pg'
 import db from '../models/elephantConnect'
-import { Desolver, ResolverFragment, Resolvers } from './desolver'
+import { Desolver, DesolverFragment, Resolvers } from './desolver'
+const desolver = new Desolver()
 
 const app = express();
 const PORT = 3000;
@@ -15,9 +16,15 @@ const typeDefs = gql`
   type Query {
     helloWorld: String
     hello: String
+    getUser: User
     getPopByCountry(country: String): Int
     getAllCountries(arg1: String, arg2: Int): [Country]
     population(arg1: String, arg2: Int): Population
+  }
+  type User {
+    id: ID!
+    name: String
+    country: Country
   }
   type Population {
     population: Int
@@ -27,7 +34,6 @@ const typeDefs = gql`
     country_name: String
     region_id: Int
     population: Population
-    address: Address
   }
   type Address {
     address: String
@@ -38,26 +44,25 @@ const typeDefs = gql`
 `;
 
 // Desolver Test Middleware for hello root query
-const helloFirst: ResolverFragment = async (parent, args, context, info, next) => {
+const helloFirst: DesolverFragment = async (parent, args, context, info, next) => {
   console.log('Hello First!');
   return next<unknown>(null, 'I am resolved first!');
 };
-const helloSecond: ResolverFragment = async (parent, args, context, info, next) => {
+const helloSecond: DesolverFragment = async (parent, args, context, info, next) => {
   console.log('Hello Second!');
   return next<unknown>(null, 2);
 };
-const helloThird: ResolverFragment = async (parent, args, context, info, next) => {
+const helloThird: DesolverFragment = async (parent, args, context, info, next) => {
   console.log('Hello Third!');
   return next()
 };
 
 // Desolver Test Middleware for getAllCountries root query
-const queryAllCountries: ResolverFragment = async (_, __, context, info, next) => {
+const queryAllCountries: DesolverFragment = async (_, __, context, info, next) => {
   try {
     const query = `
     SELECT * FROM countries;`;
     const allCountries = await db.query(query) as unknown as QueryArrayResult;
-    console.log('did i query?')
     return next(null, allCountries.rows);
   } catch (err) {
     throw new Error('Error in queryAllCountries')
@@ -66,11 +71,16 @@ const queryAllCountries: ResolverFragment = async (_, __, context, info, next) =
 
 const resolvers: Resolvers = {
   Query: {
-    helloWorld: () => 'Hello World!',
+    getUser: desolver.useRoute(() => ({
+      id: 1,
+      name: 'Michael'
+    })),
 
-    hello: Desolver.useSync(helloFirst, helloSecond, helloThird, (parent, args, context, info) => 'Hello Final!'),
+    helloWorld: desolver.useRoute(() => 'Hello World!'),
 
-    getPopByCountry: Desolver.useSync(async (parent, args, context, info) => {
+    hello: desolver.useRoute(helloFirst, helloSecond, helloThird, (parent, args, context, info): string => 'Hello Final!'),
+
+    getPopByCountry: desolver.useRoute(async (parent, args, context, info) => {
       try {
         const desolver = new Desolver(parent, args, context, info);
         return desolver.composePipeline(async (parent, args, context, info) => {
@@ -94,13 +104,18 @@ const resolvers: Resolvers = {
       }
     }),
 
-    getAllCountries: Desolver.useSync(queryAllCountries),
+    getAllCountries: desolver.useRoute(queryAllCountries),
   },
 
   Country: {
-    population: Desolver.use(async (parent, __, context, info) => {
-      console.log('in the population query');
+    population: desolver.useRoute(async (parent, __, context, info) => {
       try {
+        if (parent.country_id === "US" || parent.country_name === "United States of America") {
+          return {population: 300000000}
+        }
+        if (parent.country_id === "HK" || parent.country_name === "Hong Kong") {
+          return {population: 7000000}
+        }
         let name = parent.country_name;
         console.log('NAME in Population Query: ', name);
         const queryRes: AxiosResponse = await axios({
@@ -134,6 +149,14 @@ const resolvers: Resolvers = {
       }
     },
   },
+
+  User: {
+    country: desolver.useRoute((parent, args, context, info, next) => ({
+      country_id: 100,
+      country_name: 'Hong Kong',
+      region_id: 1234,
+    }))
+  }
 };
 
 if (process.env.NODE_ENV !== 'test') {
