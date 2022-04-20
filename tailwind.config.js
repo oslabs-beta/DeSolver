@@ -6,11 +6,16 @@ module.exports = {
       colors: {
         dark: '#293241',
         'light-blue': '#98C1D9',
+        'light-blue-navbar': '#D5E6EF',
         'dark-blue': '#3D5A80',
         light: '#E0FBFC',
-        orange: '#EE6C4D',
+        orange: '#f39882',
       },
     },
   },
-  plugins: [],
+  variants: {
+    // all the following default to ['responsive']
+    imageRendering: ['responsive'],
+  },
+  plugins: [require('tailwindcss-image-rendering')],
 };
