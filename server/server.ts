@@ -10,20 +10,22 @@ import { Desolver, DesolverFragment, Resolvers } from './desolver'
 
 const desolver = new Desolver()
 
+desolver.use(pokemonParser());
+
 desolver.use(async (parent, args, context, info, next, escapeHatch) => {
   console.log('I always run first')
   return next();
-})
+});
 
 desolver.use(async (parent, args, context, info, next, escapeHatch) => {
   console.log('I always run second')
   return next();
-})
+});
 
 desolver.use(async (parent, args, context, info, next, escapeHatch) => {
   console.log('I always run third')
   return next();
-})
+});
 
 desolver.use(async (parent, args, context, info, next, escapeHatch) => {
   console.log('I always run fourth')
@@ -66,8 +68,7 @@ const typeDefs = gql`
 
 // Desolver Test Middleware for hello root query
 const helloFirst: DesolverFragment = async (parent, args, context, info, next, escapeHatch) => {
-  console.log('Hello First!');
-  return next<unknown>(null, 'I am resolved first!');
+  return escapeHatch('I am resolved first!');
 };
 const helloSecond: DesolverFragment = async (parent, args, context, info, next, escapeHatch) => {
   console.log('Hello Second!');
@@ -127,14 +128,16 @@ const resolvers: Resolvers = {
   Country: {
     population: desolver.useRoute(async (parent, __, context, info, next, escapeHatch) => {
       try {
+        const name = parent.country_name;
         if (parent.country_id === "US" || parent.country_name === "United States of America") {
+          console.log(`Population of ${name} is ${300000000}`);
           return {population: 300000000}
         }
         if (parent.country_id === "HK" || parent.country_name === "Hong Kong") {
+          console.log(`Population of ${name} is ${7000000}`);
           return {population: 7000000}
         }
-        let name = parent.country_name;
-        console.log('NAME in Population Query: ', name);
+        
         const queryRes: AxiosResponse = await axios({
           method: 'GET',
           url: 'https://world-population.p.rapidapi.com/population',
@@ -145,6 +148,7 @@ const resolvers: Resolvers = {
               '7f41d5564dmsh59dfbf8c3bf6336p160c99jsn22c3b8738e61',
           },
         });
+        console.log(`Population of ${name} is ${queryRes.data.body.population}`);
         return queryRes.status >= 400 ? {population: null} : {population: queryRes.data.body.population}
         // const population = queryRes.data.body.population;
         // return { population };
@@ -191,3 +195,39 @@ async function startApolloServer(typeDefs: DocumentNode, resolvers: Resolvers, a
 }
 
 export = { startApolloServer, typeDefs, resolvers };
+
+interface pokeStats {
+  name: string;
+  species: {
+    name: string;
+    url: string;
+  };
+  stats: {
+    base_stat: number;
+    effort: number;
+    stat: object;
+  }[]
+}
+
+function pokemonParser(): DesolverFragment {
+  function getRandomIntInclusive(min: number, max: number) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  }
+  return async (parent, args, context, info, next, escapeHatch) => {
+    try {
+      const randomNum = getRandomIntInclusive(0, 1126)
+      console.log(randomNum)
+      const pokeRes: AxiosResponse = await axios({
+        method: 'GET',
+        url: `https://pokeapi.co/api/v2/pokemon?limit=100000&offset=0`,
+      });
+      const { name, url } = pokeRes.data.results[randomNum];
+      console.log({ name, url })
+      return next();
+    } catch (e) {
+      console.error(e)
+    }
+  }
+}

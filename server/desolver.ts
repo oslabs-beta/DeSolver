@@ -166,6 +166,7 @@ async function getCachedValue(
   cache: RedisClientType,
   info: GraphQLResolveInfo
 ): Promise<void | string> {
+  // Add AST parse logic here and pass into the cache
   const cachedValue = await cache.hGet('Query', JSON.stringify(info.path));
   if (cachedValue !== null) return cachedValue;
 }
