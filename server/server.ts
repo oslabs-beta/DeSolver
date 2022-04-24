@@ -6,31 +6,18 @@ import express from 'express';
 import axios, { AxiosResponse } from 'axios';
 import { QueryArrayResult } from 'pg'
 import db from '../models/elephantConnect'
-import { Desolver, DesolverFragment, Resolvers } from './desolver'
+import { Desolver, DesolverFragment, Resolvers, pokemonParser } from './desolver'
 
-const desolver = new Desolver()
+const desolver = new Desolver({
+  cacheDesolver: true,
+})
+
+// desolver.use(function throwError(parent, args, ctx, info, next, escapeHatch) {
+//   throw new Error('nope')
+// });
 
 desolver.use(pokemonParser());
 
-desolver.use(async (parent, args, context, info, next, escapeHatch) => {
-  console.log('I always run first')
-  return next();
-});
-
-desolver.use(async (parent, args, context, info, next, escapeHatch) => {
-  console.log('I always run second')
-  return next();
-});
-
-desolver.use(async (parent, args, context, info, next, escapeHatch) => {
-  console.log('I always run third')
-  return next();
-});
-
-desolver.use(async (parent, args, context, info, next, escapeHatch) => {
-  console.log('I always run fourth')
-  return next();
-})
 
 const app = express();
 const PORT = 3000;
@@ -40,7 +27,7 @@ const typeDefs = gql`
     helloWorld: String
     hello: String
     getUser: User
-    getPopByCountry(country: String): Int
+    getPopByCountry(country: String!): Int!
     getAllCountries(arg1: String, arg2: Int): [Country]
     population(arg1: String, arg2: Int): Population
   }
@@ -91,18 +78,18 @@ const queryAllCountries: DesolverFragment = async (_, __, context, info, next, e
   }
 };
 
-const resolvers: Resolvers = {
+const resolvers: Resolvers = desolver.apply({
   Query: {
-    getUser: desolver.useRoute(() => ({
+    getUser: () => ({
       id: 1,
       name: 'Michael'
-    })),
+    }),
 
-    helloWorld: desolver.useRoute(() => 'Hello World!'),
+    helloWorld: () => 'Hello World!',
 
     hello: desolver.useRoute(helloFirst, helloSecond, helloThird, (parent, args, context, info): string => 'Hello Final!'),
 
-    getPopByCountry: desolver.useRoute(async (parent, args, context, info, next, escapeHatch) => {
+    getPopByCountry: async (parent, args, context, info, next, escapeHatch) => {
       try {
           const { country } = args;
           const queryRes: AxiosResponse = await axios({
@@ -120,13 +107,13 @@ const resolvers: Resolvers = {
       } catch (err) {
         console.log('error with getPopByCountry: ', err);
       }
-    }),
+    },
 
-    getAllCountries: desolver.useRoute(queryAllCountries),
+    getAllCountries: queryAllCountries,
   },
 
   Country: {
-    population: desolver.useRoute(async (parent, __, context, info, next, escapeHatch) => {
+    population: async (parent, __, context, info, next, escapeHatch) => {
       try {
         const name = parent.country_name;
         if (parent.country_id === "US" || parent.country_name === "United States of America") {
@@ -155,7 +142,7 @@ const resolvers: Resolvers = {
       } catch (err) {
         console.log('error with population: ', err);
       }
-    }),
+    },
   },
   Address: {
     address: async (_, __, context, info, next, escapeHatch) => {
@@ -178,7 +165,7 @@ const resolvers: Resolvers = {
       region_id: 1234,
     }))
   }
-};
+});
 
 if (process.env.NODE_ENV !== 'test') {
   startApolloServer(typeDefs, resolvers, PORT);
@@ -195,39 +182,3 @@ async function startApolloServer(typeDefs: DocumentNode, resolvers: Resolvers, a
 }
 
 export = { startApolloServer, typeDefs, resolvers };
-
-interface pokeStats {
-  name: string;
-  species: {
-    name: string;
-    url: string;
-  };
-  stats: {
-    base_stat: number;
-    effort: number;
-    stat: object;
-  }[]
-}
-
-function pokemonParser(): DesolverFragment {
-  function getRandomIntInclusive(min: number, max: number) {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1) + min);
-  }
-  return async (parent, args, context, info, next, escapeHatch) => {
-    try {
-      const randomNum = getRandomIntInclusive(0, 1126)
-      console.log(randomNum)
-      const pokeRes: AxiosResponse = await axios({
-        method: 'GET',
-        url: `https://pokeapi.co/api/v2/pokemon?limit=100000&offset=0`,
-      });
-      const { name, url } = pokeRes.data.results[randomNum];
-      console.log({ name, url })
-      return next();
-    } catch (e) {
-      console.error(e)
-    }
-  }
-}

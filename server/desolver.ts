@@ -1,13 +1,14 @@
+import axios, { AxiosResponse } from 'axios';
 import { createClient, RedisClientType, RedisClientOptions } from 'redis';
-import { GraphQLResolveInfo } from 'graphql';
+import { GraphQLResolveInfo, visit, FieldNode, OperationDefinitionNode } from 'graphql';
 
 export type DesolverFragment = (
   parent: Record<string, unknown>,
   args: Record<string, unknown>,
   context: Record<string, unknown>,
   info: GraphQLResolveInfo,
-  next: <T>(err?: string, resolvedObject?: T) => void,
-  escapeHatch: <T>(resolvedObject: T) => T | void
+  next?: <T>(err?: string, resolvedObject?: T) => void,
+  escapeHatch?: <T>(resolvedObject: T) => T | void
 ) => unknown | Promise<void | unknown>;
 
 export type ResolverWrapper = (
@@ -36,11 +37,15 @@ export class Desolver {
   private cache: RedisClientType;
 
   constructor(public cacheConfig?: DesolverCacheConfig) {
-    if (this.cacheConfig) {
+    if (this.cacheConfig?.cacheDesolver === true) {
+      // console.log('Redis cache starting with custom config')
       this.cache = createClient(this.cacheConfig);
       this.cache.connect();
       this.cache.on('error', (err) => console.log('Redis Client Error', err));
+    } else if (this.cacheConfig?.cacheDesolver === false) {
+      // Do nothing, cache not started
     } else {
+      // console.log('No Desolver Configuration specified, starting default Redis Client')
       this.cache = createClient();
       this.cache.connect();
       this.cache.on('error', (err) => console.log('Redis Client Error', err));
@@ -49,6 +54,15 @@ export class Desolver {
 
   public use(...desolvers: DesolverFragment[]): void {
     this.pipeline.push(...desolvers);
+  }
+
+  public apply(resolvers: Resolvers): Resolvers {
+    for (const type in resolvers) {
+      for (const field in resolvers[type]) {
+        resolvers[type][field] = this.useRoute(resolvers[type][field]);
+      }
+    }
+    return resolvers;
   }
 
   public useRoute(...desolvers: DesolverFragment[]): ResolverWrapper {
@@ -75,12 +89,14 @@ export class Desolver {
     info: GraphQLResolveInfo,
     ...desolvers: DesolverFragment[]
   ): Promise<unknown> {
-    const cachedValue = await getCachedValue(this.cache, info);
-    if (cachedValue) {
-      console.log('Cache Hit!');
-      return JSON.parse(cachedValue);
+    if (this.cacheConfig.cacheDesolver === true) {
+      const cachedValue = await getCachedValue(this.cache, info);
+      if (cachedValue) {
+        console.log('Cache Hit!');
+        return JSON.parse(cachedValue);
+      }
     }
-    console.log('Cache Miss, executing pipeline');
+
     const resolvedValue = await this.execute(
       parent,
       args,
@@ -89,7 +105,12 @@ export class Desolver {
       ...this.pipeline,
       ...desolvers
     );
-    await setCachedValue(this.cache, info, resolvedValue);
+
+    if (this.cacheConfig.cacheDesolver === true) {
+      console.log('Setting cached value');
+      await setCachedValue(this.cache, info, resolvedValue);
+    }
+
     return resolvedValue;
   }
 
@@ -121,7 +142,7 @@ export class Desolver {
       } catch (e) {
         throw new Error(err);
       }
-    }
+    };
 
     const escapeHatch = <T>(resolvedValue: T): void | T => {
       try {
@@ -130,7 +151,7 @@ export class Desolver {
       } catch (e) {
         throw new Error(e.message);
       }
-    }
+    };
 
     while (nextIdx <= desolvers.length - 1) {
       if (resolvedObject.resolved) return resolvedObject.value;
@@ -166,7 +187,7 @@ async function getCachedValue(
   cache: RedisClientType,
   info: GraphQLResolveInfo
 ): Promise<void | string> {
-  // Add AST parse logic here and pass into the cache
+  // Add AST parse logic here to create a unique key and pass into the cache to fetch
   const cachedValue = await cache.hGet('Query', JSON.stringify(info.path));
   if (cachedValue !== null) return cachedValue;
 }
@@ -176,12 +197,36 @@ async function setCachedValue(
   info: GraphQLResolveInfo,
   resolvedValue: unknown
 ): Promise<void> {
-  // console.log('Setting Resolved Value to the Cache');
+  // Add AST parse logic here to create a unique key and pass into the cache to be set
   await cache.hSet(
     'Query',
     JSON.stringify(info.path),
     JSON.stringify(resolvedValue)
   );
+}
+
+// Demonstration middleware/Desolver Fragment to perform asynchronous actions prior to executing resolvers
+export function pokemonParser(): DesolverFragment {
+  function getRandomIntInclusive(min: number, max: number): number {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  }
+  return async (parent, args, context, info, next, escapeHatch) => {
+    try {
+      const randomNum = getRandomIntInclusive(0, 1126);
+      console.log(randomNum);
+      const pokeRes: AxiosResponse = await axios({
+        method: 'GET',
+        url: `https://pokeapi.co/api/v2/pokemon?limit=100000&offset=0`,
+      });
+      const { name, url } = pokeRes.data.results[randomNum];
+      console.log({ name, url });
+      return next();
+    } catch (e) {
+      console.error(e);
+    }
+  };
 }
 
 /* Alternative Iterations of the getCache and setCache functions
