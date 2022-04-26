@@ -2,6 +2,7 @@ import React from 'react';
 import Nav from './Nav';
 import Header from './Header';
 import Sandbox from './Sandbox';
+import Team from './Team';
 
 const App = () => {
   return (
@@ -9,6 +10,7 @@ const App = () => {
       <Nav />
       <Header />
       <Sandbox />
+      <Team />
     </>
   )
 };
