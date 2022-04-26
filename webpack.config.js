@@ -18,6 +18,14 @@ module.exports = {
   module: {
     rules: [
       {
+        test: /\.(png|jpe?g|gif)$/i,
+        use: [
+          {
+            loader: 'file-loader',
+          },
+        ],
+      },
+      {
         test: /\.jsx?/,
         exclude: /(node_modules)/,
         use: {
@@ -38,8 +46,8 @@ module.exports = {
       },
       {
         test: /\.css$/i,
-        include: path.resolve(__dirname, "client"),
-        use: ["style-loader", "css-loader", "postcss-loader"],
+        include: path.resolve(__dirname, 'client'),
+        use: ['style-loader', 'css-loader', 'postcss-loader'],
       },
       {
         test: /\.png/,
