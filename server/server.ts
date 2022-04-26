@@ -9,7 +9,7 @@ import db from '../models/elephantConnect'
 import { Desolver, DesolverFragment, Resolvers, pokemonParser } from './desolver'
 
 const desolver = new Desolver({
-  cacheDesolver: true,
+  cacheDesolver: false,
 })
 
 // desolver.use(function throwError(parent, args, ctx, info, next, escapeHatch) {
@@ -54,14 +54,17 @@ const typeDefs = gql`
 `;
 
 // Desolver Test Middleware for hello root query
-const helloFirst: DesolverFragment = async (parent, args, context, info, next, escapeHatch) => {
-  return escapeHatch('I am resolved first!');
+const helloFirst: DesolverFragment = async (parent, args, context, info, next, escapeHatch, ds) => {
+  ds.context = 'hello'
+  // return escapeHatch('I am resolved first!');
+  return next();
 };
-const helloSecond: DesolverFragment = async (parent, args, context, info, next, escapeHatch) => {
+const helloSecond: DesolverFragment = async (parent, args, context, info, next, escapeHatch, ds) => {
+  console.log('context afterwards', ds.context)
   console.log('Hello Second!');
   return next<unknown>(null, 2);
 };
-const helloThird: DesolverFragment = async (parent, args, context, info, next, escapeHatch) => {
+const helloThird: DesolverFragment = async (parent, args, context, info, next, escapeHatch, ds) => {
   console.log('Hello Third!');
   return next()
 };
@@ -78,14 +81,14 @@ const queryAllCountries: DesolverFragment = async (_, __, context, info, next, e
   }
 };
 
-const resolvers: Resolvers = desolver.apply({
+const resolvers: Resolvers = {
   Query: {
-    getUser: () => ({
+    getUser: desolver.useRoute(() => ({
       id: 1,
       name: 'Michael'
-    }),
+    })),
 
-    helloWorld: () => 'Hello World!',
+    helloWorld: desolver.useRoute(() => 'Hello World!'),
 
     hello: desolver.useRoute(helloFirst, helloSecond, helloThird, (parent, args, context, info): string => 'Hello Final!'),
 
@@ -109,11 +112,11 @@ const resolvers: Resolvers = desolver.apply({
       }
     },
 
-    getAllCountries: queryAllCountries,
+    getAllCountries: desolver.useRoute(queryAllCountries),
   },
 
   Country: {
-    population: async (parent, __, context, info, next, escapeHatch) => {
+    population: desolver.useRoute(async (parent, __, context, info, next, escapeHatch) => {
       try {
         const name = parent.country_name;
         if (parent.country_id === "US" || parent.country_name === "United States of America") {
@@ -142,7 +145,7 @@ const resolvers: Resolvers = desolver.apply({
       } catch (err) {
         console.log('error with population: ', err);
       }
-    },
+    }),
   },
   Address: {
     address: async (_, __, context, info, next, escapeHatch) => {
@@ -165,7 +168,7 @@ const resolvers: Resolvers = desolver.apply({
       region_id: 1234,
     }))
   }
-});
+};
 
 if (process.env.NODE_ENV !== 'test') {
   startApolloServer(typeDefs, resolvers, PORT);

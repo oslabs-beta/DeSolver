@@ -8,7 +8,8 @@ export type DesolverFragment = (
   context: Record<string, unknown>,
   info: GraphQLResolveInfo,
   next?: <T>(err?: string, resolvedObject?: T) => void,
-  escapeHatch?: <T>(resolvedObject: T) => T | void
+  escapeHatch?: <T>(resolvedObject: T) => T | void,
+  ds?: Record<string, unknown>,
 ) => unknown | Promise<void | unknown>;
 
 export type ResolverWrapper = (
@@ -23,8 +24,11 @@ export interface ResolvedObject {
   value: unknown;
 }
 
-export interface DesolverCacheConfig extends RedisClientOptions {
+export type ResolverType = 'Query' | 'Mutation' | 'Root' | 'All';
+
+export interface DesolverConfig extends RedisClientOptions {
   cacheDesolver?: boolean;
+  applyResolverType?: ResolverType;
 }
 
 export interface Resolvers {
@@ -36,13 +40,13 @@ export class Desolver {
   private pipeline: DesolverFragment[] = [];
   private cache: RedisClientType;
 
-  constructor(public cacheConfig?: DesolverCacheConfig) {
-    if (this.cacheConfig?.cacheDesolver === true) {
+  constructor(public config?: DesolverConfig) {
+    if (this.config?.cacheDesolver === true) {
       // console.log('Redis cache starting with custom config')
-      this.cache = createClient(this.cacheConfig);
+      this.cache = createClient(this.config);
       this.cache.connect();
       this.cache.on('error', (err) => console.log('Redis Client Error', err));
-    } else if (this.cacheConfig?.cacheDesolver === false) {
+    } else if (this.config?.cacheDesolver === false) {
       // Do nothing, cache not started
     } else {
       // console.log('No Desolver Configuration specified, starting default Redis Client')
@@ -89,7 +93,7 @@ export class Desolver {
     info: GraphQLResolveInfo,
     ...desolvers: DesolverFragment[]
   ): Promise<unknown> {
-    if (this.cacheConfig.cacheDesolver === true) {
+    if (this.config.cacheDesolver === true) {
       const cachedValue = await getCachedValue(this.cache, info);
       if (cachedValue) {
         console.log('Cache Hit!');
@@ -106,7 +110,7 @@ export class Desolver {
       ...desolvers
     );
 
-    if (this.cacheConfig.cacheDesolver === true) {
+    if (this.config.cacheDesolver === true) {
       console.log('Setting cached value');
       await setCachedValue(this.cache, info, resolvedValue);
     }
@@ -130,6 +134,8 @@ export class Desolver {
     }
 
     const resolvedObject: ResolvedObject = { resolved: false, value: null };
+
+    const ds = {};
 
     const next = <T>(err?: string, resolvedValue?: T): void | T => {
       try {
@@ -163,11 +169,12 @@ export class Desolver {
           context,
           info,
           next,
-          escapeHatch
+          escapeHatch,
+          ds
         );
       }
 
-      await desolvers[nextIdx](parent, args, context, info, next, escapeHatch);
+      await desolvers[nextIdx](parent, args, context, info, next, escapeHatch, ds);
     }
   }
 
