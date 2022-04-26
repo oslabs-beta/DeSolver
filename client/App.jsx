@@ -1,7 +1,8 @@
 import React from 'react';
 import Nav from './Nav';
 import Footer from './Footer';
-import Sandbox from './Sandbox';
+import Code from './Code';
+import Learn from './Learn';
 import Team from './Team';
 import './index.css';
 
@@ -9,7 +10,8 @@ const App = () => {
   return (
     <>
       <Nav />
-      <Sandbox />
+      <Learn />
+      <Code />
       <Team />
       <Footer />
     </>
