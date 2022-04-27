@@ -1,16 +1,21 @@
 import React from 'react';
 import Nav from './Nav';
-import Header from './Header';
-import Sandbox from './Sandbox';
+import Footer from './Footer';
+import Code from './Code';
+import Learn from './Learn';
+import Team from './Team';
+import './index.css';
 
 const App = () => {
   return (
     <>
       <Nav />
-      <Header />
-      <Sandbox />
+      <Learn />
+      <Code />
+      <Team />
+      <Footer />
     </>
-  )
+  );
 };
 
 export default App;

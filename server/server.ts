@@ -12,7 +12,7 @@ const app = express();
 const PORT = 3000;
 
 const desolver = new Desolver({
-  cacheDesolver: true,
+  cacheDesolver: false,
   applyResolverType: 'All'
 })
 
