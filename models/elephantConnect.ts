@@ -1,4 +1,6 @@
-const { Pool } = require('pg');
+import { Pool, QueryResult, QueryArrayResult, Query } from 'pg'
+
+type Callback<T> = (err: Error, result: QueryResult<T[]>) => T[]
 
 const PG_URI = process.env.DB_elephant;
 
@@ -10,9 +12,9 @@ pool.on('connect', () => {
   console.log('connected to database');
 });
 
-module.exports = {
+export = {
   PG_URI,
-  query: (text, params, callback) => {
+  query: (text: string, params?: string[], callback?: Callback<any>): void => {
     console.log('executed query', text);
     return pool.query(text, params, callback);
   },
