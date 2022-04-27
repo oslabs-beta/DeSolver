@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 import { createClient, RedisClientType, RedisClientOptions } from 'redis';
-import { GraphQLResolveInfo, visit, FieldNode, OperationDefinitionNode } from 'graphql';
+import { GraphQLResolveInfo } from 'graphql';
 
 export type DesolverFragment = (
   parent: Record<string, unknown>,
@@ -9,7 +9,7 @@ export type DesolverFragment = (
   info: GraphQLResolveInfo,
   next?: <T>(err?: string, resolvedObject?: T) => void,
   escapeHatch?: <T>(resolvedObject: T) => T | void,
-  ds?: Record<string, unknown>,
+  ds?: Record<string, unknown>
 ) => unknown | Promise<void | unknown>;
 
 export type ResolverWrapper = (
@@ -24,7 +24,7 @@ export interface ResolvedObject {
   value: unknown;
 }
 
-export type ResolverType = 'Query' | 'Mutation' | 'Root' | 'All';
+export type ResolverType = 'Query' | 'Mutation' | 'Root' | 'All' | string;
 
 export interface DesolverConfig extends RedisClientOptions {
   cacheDesolver?: boolean;
@@ -62,8 +62,22 @@ export class Desolver {
 
   public apply(resolvers: Resolvers): Resolvers {
     for (const type in resolvers) {
-      for (const field in resolvers[type]) {
-        resolvers[type][field] = this.useRoute(resolvers[type][field]);
+      if (
+        this.config?.applyResolverType &&
+        type === this.config.applyResolverType
+      ) {
+        for (const field in resolvers[type]) {
+          // console.log('inside if statement', type);
+          resolvers[type][field] = this.useRoute(resolvers[type][field]);
+        }
+      } else if (
+        !this.config?.applyResolverType ||
+        this.config.applyResolverType === 'All'
+      ) {
+        for (const field in resolvers[type]) {
+          // console.log('Im here!!!', type);
+          resolvers[type][field] = this.useRoute(resolvers[type][field]);
+        }
       }
     }
     return resolvers;
@@ -174,7 +188,15 @@ export class Desolver {
         );
       }
 
-      await desolvers[nextIdx](parent, args, context, info, next, escapeHatch, ds);
+      await desolvers[nextIdx](
+        parent,
+        args,
+        context,
+        info,
+        next,
+        escapeHatch,
+        ds
+      );
     }
   }
 

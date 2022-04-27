@@ -3,24 +3,20 @@ dotenv.config()
 import { ApolloServer, gql } from 'apollo-server-express';
 import { DocumentNode } from 'graphql';
 import express from 'express';
+import bodyParser, { Request } from 'express'
 import axios, { AxiosResponse } from 'axios';
 import { QueryArrayResult } from 'pg'
 import db from '../models/elephantConnect'
 import { Desolver, DesolverFragment, Resolvers, pokemonParser } from './desolver'
-
-const desolver = new Desolver({
-  cacheDesolver: false,
-})
-
-// desolver.use(function throwError(parent, args, ctx, info, next, escapeHatch) {
-//   throw new Error('nope')
-// });
-
-desolver.use(pokemonParser());
-
-
 const app = express();
 const PORT = 3000;
+
+const desolver = new Desolver({
+  cacheDesolver: true,
+  applyResolverType: 'All'
+})
+
+desolver.use(pokemonParser());
 
 const typeDefs = gql`
   type Query {
@@ -81,14 +77,14 @@ const queryAllCountries: DesolverFragment = async (_, __, context, info, next, e
   }
 };
 
-const resolvers: Resolvers = {
+const resolvers: Resolvers = desolver.apply({
   Query: {
-    getUser: desolver.useRoute(() => ({
+    getUser: () => ({
       id: 1,
       name: 'Michael'
-    })),
+    }),
 
-    helloWorld: desolver.useRoute(() => 'Hello World!'),
+    helloWorld: () => 'Hello World!',
 
     hello: desolver.useRoute(helloFirst, helloSecond, helloThird, (parent, args, context, info): string => 'Hello Final!'),
 
@@ -112,11 +108,11 @@ const resolvers: Resolvers = {
       }
     },
 
-    getAllCountries: desolver.useRoute(queryAllCountries),
+    getAllCountries: queryAllCountries,
   },
 
   Country: {
-    population: desolver.useRoute(async (parent, __, context, info, next, escapeHatch) => {
+    population: async (parent, __, context, info, next, escapeHatch) => {
       try {
         const name = parent.country_name;
         if (parent.country_id === "US" || parent.country_name === "United States of America") {
@@ -145,7 +141,7 @@ const resolvers: Resolvers = {
       } catch (err) {
         console.log('error with population: ', err);
       }
-    }),
+    },
   },
   Address: {
     address: async (_, __, context, info, next, escapeHatch) => {
@@ -168,7 +164,7 @@ const resolvers: Resolvers = {
       region_id: 1234,
     }))
   }
-};
+});
 
 if (process.env.NODE_ENV !== 'test') {
   startApolloServer(typeDefs, resolvers, PORT);
@@ -177,11 +173,28 @@ if (process.env.NODE_ENV !== 'test') {
 async function startApolloServer(typeDefs: DocumentNode, resolvers: Resolvers, apolloPort: number) {
   const server = new ApolloServer({ typeDefs, resolvers });
   await server.start();
-  server.applyMiddleware({ app });
+  app.use(bodyParser.json())
+  app.post('/graphql', async (req, res, next) => {
+    try {
+      if (req.body?.operationName === 'IntrospectionQuery') {
+        return next();
+      }
+      await consoleSomething('Request intercepted!', req.body);
+    } catch (e) {
+
+    }
+    return next();
+  })
+  server.applyMiddleware({ app, bodyParserConfig: true });
 
   return app.listen(apolloPort, () => {
     console.log(`Apollo GraphQL Server listening on port: ${apolloPort}...`);
   });
+}
+
+async function consoleSomething(input: string, another?: any) {
+  console.log(input)
+  console.log(another)
 }
 
 export = { startApolloServer, typeDefs, resolvers };
