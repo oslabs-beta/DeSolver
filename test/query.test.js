@@ -1,4 +1,4 @@
-const { startApolloServer, typeDefs, resolvers } = require('./server/server');
+const { startApolloServer, typeDefs, resolvers } = require('../server/server');
 const request = require('supertest');
 
 // queries to be tested

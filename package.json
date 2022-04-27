@@ -6,11 +6,11 @@
   "scripts": {
     "start": "NODE_ENV=production nodemon server/server.js",
     "build": "NODE_ENV=production webpack",
-    "dev": "NODE_ENV=development webpack serve --open & NODE_ENV=development nodemon server/server.js",
+    "dev": "NODE_ENV=development webpack serve --open & NODE_ENV=development nodemon server/server.ts",
     "lint": "eslint --ext .jsx --ext .js --ext .ts",
     "test": "jest",
     "prepare": "husky install",
-    "desolve": "nodemon server/server.js & tsc -w server/desolver.ts"
+    "desolver": "nodemon server/server.ts & redis-server"
   },
   "repository": {
     "type": "git",
@@ -35,6 +35,7 @@
     "pg": "^8.7.3",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
+    "redis": "^4.0.6",
     "react-icons": "^4.3.1",
     "react-scroll": "^1.8.7"
   },
@@ -46,6 +47,7 @@
     "@babel/preset-react": "^7.16.7",
     "@babel/preset-typescript": "^7.16.7",
     "@testing-library/react": "^12.1.3",
+    "@types/pg": "^8.6.5",
     "autoprefixer": "^10.4.4",
     "babel-jest": "^27.5.1",
     "babel-loader": "^8.2.3",
@@ -68,6 +70,7 @@
     "tailwindcss": "^3.0.23",
     "tailwindcss-image-rendering": "^1.0.2",
     "ts-loader": "^9.2.6",
+    "ts-node": "^10.7.0",
     "typescript": "^4.5.5",
     "webpack": "^5.68.0",
     "webpack-cli": "^4.9.2",
