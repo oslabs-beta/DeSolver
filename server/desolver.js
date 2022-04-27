@@ -135,37 +135,94 @@ var __generator =
 exports.__esModule = true;
 exports.Desolver = void 0;
 var Desolver = /** @class */ (function () {
-  function Desolver(parent, args, context, info) {
-    this.parent = parent;
-    this.args = args;
-    this.context = context;
-    this.info = info;
-    this.hasNext = 0;
-    this.resolvedObject = { resolved: false, value: null };
-    this.next = this.next.bind(this);
-  }
-  Desolver.use = function () {
-    var _this = this;
-    var resolvers = [];
-    for (var _i = 0; _i < arguments.length; _i++) {
-      resolvers[_i] = arguments[_i];
+    function Desolver(parent, args, context, info) {
+        this.parent = parent;
+        this.args = args;
+        this.context = context;
+        this.info = info;
+        this.hasNext = 0;
+        this.escapeDesolver = { wasCalled: false, resolveVal: null };
+        this.next = this.next.bind(this);
+        this.escapeHatch = this.escapeHatch.bind(this);
     }
-    return function (parent, args, context, info) {
-      return __awaiter(_this, void 0, void 0, function () {
-        var desolver;
-        return __generator(this, function (_a) {
-          switch (_a.label) {
-            case 0:
-              desolver = new Desolver(parent, args, context, info);
-              return [
-                4 /*yield*/,
-                desolver.composePipeline.apply(desolver, resolvers),
-              ];
-            case 1:
-              return [2 /*return*/, _a.sent()];
-          }
+    Desolver.use = function () {
+        var _this = this;
+        var resolvers = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            resolvers[_i] = arguments[_i];
+        }
+        return function (parent, args, context, info) { return __awaiter(_this, void 0, void 0, function () {
+            var desolver;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        desolver = new Desolver(parent, args, context, info);
+                        return [4 /*yield*/, desolver.composePipeline.apply(desolver, resolvers)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        }); };
+    };
+    // Consider refactoring the below using the 'cause' proptery in custom error types
+    // Consider own Error class to differentiate errors? Is this needed?  
+    Desolver.prototype.errorLogger = function (error) {
+        var errorObj = {
+            'Error': error.toString(),
+            'Error Name': error.name,
+            'Error Message': error.message
+        };
+        throw new Error("failed to resolve ".concat(this.pipeline[this.hasNext], ": ").concat(errorObj));
+        // ^ how can I refacor the above to include multiple error parameters, Error(message, options)
+    };
+    Desolver.prototype.composePipeline = function () {
+        var resolvers = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            resolvers[_i] = arguments[_i];
+        }
+        this.pipeline = resolvers;
+        return this.execute();
+    };
+    Desolver.prototype.execute = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var error_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!(this.hasNext < this.pipeline.length - 1)) return [3 /*break*/, 5];
+                        console.log('this.hasNext:', this.hasNext, 'pipe length', this.pipeline.length);
+                        if (this.escapeDesolver.wasCalled === true) {
+                            console.log("\n          Reached conditional for escapeDesolver.\n          Returning: ".concat(this.escapeDesolver.resolveVal));
+                            this.escapeDesolver.wasCalled = false;
+                            console.log('wasCalled updated, should be FALSE: ', this.escapeDesolver.wasCalled);
+                            return [2 /*return*/, this.escapeDesolver.resolveVal];
+                        }
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, this.pipeline[this.hasNext](this.parent, this.args, this.context, this.info, this.next, this.escapeHatch)];
+                    case 2:
+                        _a.sent();
+                        return [3 /*break*/, 4];
+                    case 3:
+                        error_1 = _a.sent();
+                        return [2 /*return*/, this.errorLogger(error_1)];
+                    case 4: return [3 /*break*/, 0];
+                    case 5: return [4 /*yield*/, this.pipeline[this.hasNext](this.parent, this.args, this.context, this.info, this.next, this.escapeHatch)];
+                    case 6: return [2 /*return*/, _a.sent()];
+                }
+            });
         });
-      });
+    };
+    Desolver.prototype.next = function () {
+        return this.hasNext += 1;
+    };
+    Desolver.prototype.escapeHatch = function (args) {
+        console.log('REACHED ESCAPE HATCH, args = ', args);
+        this.escapeDesolver.wasCalled = true;
+        console.log('new boolean value : ', this.escapeDesolver.wasCalled);
+        this.escapeDesolver.resolveVal = args;
+        console.log('return value out of escapeHatch: ', this.escapeDesolver.resolveVal);
+        return;
     };
   };
   Desolver.prototype.composePipeline = function () {

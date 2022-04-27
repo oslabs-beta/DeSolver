@@ -21,11 +21,15 @@ Desolver is an optimized solution for writing resolvers in GraphQL. Leveraging p
 
 #### Cache
 
+Redis caching
+
 #### Escape Hatch
 
 #### Error Handling
 
 #### Pipeline
+
+can create multiple pipelines for each desolver;
 
 # Example
 

@@ -3,7 +3,8 @@ export type Resolver = (
   args: Record<string, unknown>,
   context: Record<string, unknown>,
   info: Record<string, unknown>,
-  next: () => void
+  next: () => unknown,
+  escapeHatch: (args: any) => unknown
 ) => unknown;
 
 export type ResolverWrapper = ( 
@@ -13,9 +14,9 @@ export type ResolverWrapper = (
   info: Record<string, unknown>
 ) => unknown | Promise<unknown>;
 
-export interface ResolvedObject {
-  resolved: boolean;
-  value: unknown;
+export type EscapeDesolver = {
+  wasCalled: boolean;
+  resolveVal: null;
 }
 
 export class Desolver {
@@ -32,16 +33,29 @@ export class Desolver {
   }
 
   private hasNext: number = 0;
-  private pipeline: Resolver[];
-  private resolvedObject: ResolvedObject = { resolved: false, value: null }
+  private pipeline!: Resolver[];
+  private escapeDesolver: EscapeDesolver = {wasCalled: false, resolveVal: null}
 
   constructor(
     public parent: Record<string, unknown>,
     public args: Record<string, unknown>,
     public context: Record<string, unknown>,
-    public info: Record<string, unknown>
+    public info: Record<string, unknown>,
   ) {
     this.next = this.next.bind(this);
+    this.escapeHatch = this.escapeHatch.bind(this)
+  }
+
+  // Consider refactoring the below using the 'cause' proptery in custom error types
+  // Consider own Error class to differentiate errors? Is this needed?  
+  public errorLogger(error: any): any {
+    let errorObj = {
+      'Error': error.toString(),
+      'Error Name': error.name,
+      'Error Message': error.message,
+    }
+    throw new Error(`failed to resolve ${this.pipeline[this.hasNext]}: ${errorObj}`)
+    // ^ how can I refacor the above to include multiple error parameters, Error(message, options)
   }
 
   public composePipeline(...resolvers: Resolver[]): unknown {
@@ -49,40 +63,57 @@ export class Desolver {
     return this.execute();
   }
 
-  private execute(): unknown {
+  private async execute(): Promise<unknown> {
     while (this.hasNext <= this.pipeline.length - 1) {
-      if (this.resolvedObject.resolved) return this.resolvedObject.value;
-
-      if (this.hasNext === this.pipeline.length - 1) {
-        return this.pipeline[this.hasNext](
+      console.log('this.hasNext:',this.hasNext, 'pipe length',this.pipeline.length)
+      
+      if (this.escapeDesolver.wasCalled === true) {
+        console.log(`
+          Reached conditional for escapeDesolver.
+          Returning: ${this.escapeDesolver.resolveVal}`
+        )
+        this.escapeDesolver.wasCalled = false
+        console.log('wasCalled updated, should be FALSE: ', this.escapeDesolver.wasCalled)
+        return this.escapeDesolver.resolveVal
+      }
+      
+      try {
+        await this.pipeline[this.hasNext](
           this.parent,
           this.args,
           this.context,
           this.info,
-          this.next
+          this.next,
+          this.escapeHatch
         );
       }
-
-      this.pipeline[this.hasNext](
-        this.parent,
-        this.args,
-        this.context,
-        this.info,
-        this.next
-      );
+      catch (error: any) {
+        return this.errorLogger(error)
+      }
     }
+
+    return await this.pipeline[this.hasNext](
+      this.parent,
+      this.args,
+      this.context,
+      this.info,
+      this.next,
+      this.escapeHatch
+    );
   }
 
-  public next<T>(err?: string, resolveValue?: T ): void | T {
-    try {
-      if (err) throw new Error(err)
-      if (resolveValue) {
-        this.resolvedObject.resolved = true;
-        return this.resolvedObject.value = resolveValue;
-      };
-      this.hasNext += 1;
-    } catch (error: unknown) {
-      throw error;
-    }
+  public next(): unknown {
+    return this.hasNext += 1;
+  }
+
+  public escapeHatch(args: any): unknown {
+    console.log('REACHED ESCAPE HATCH, args = ', args);
+
+    this.escapeDesolver.wasCalled = true;
+    console.log('new boolean value : ', this.escapeDesolver.wasCalled)
+
+    this.escapeDesolver.resolveVal = args;
+    console.log('return value out of escapeHatch: ', this.escapeDesolver.resolveVal)
+    return 
   }
 }

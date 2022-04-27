@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Transition } from '@headlessui/react';
-
+import { Link, animateScroll as scroll } from "react-scroll";
 import brand from '../assets/desolverbold_web.gif';
 
 function Nav() {
@@ -16,35 +16,35 @@ function Nav() {
                   <img className='h-16 ' src={brand} alt='brand' />
                 </div>
               </div>
-              <div className='hidden md:block mt-4'>
+              <div className='hidden md:block mt-4 w-14 justify-center'>
                 <div className=' ml-10 flex items-baseline space-x-4'>
-                  <a
-                    href='#'
-                    className=' hover:bg-orange text-dark-blue px-1 py-1 rounded-md text-sm font-medium'
-                  >
-                    DeSolver
-                  </a>
 
-                  <a
-                    href='#'
-                    className='hover:bg-orange text-dark-blue px-1 py-1 rounded-md text-sm font-medium'
-                  >
-                    Learn
-                  </a>
+                  <Link className='hover:bg-orange text-dark-blue px-1 py-1 rounded-md text-sm font-medium'
+                      activeClass="active"
+                      to="learn"
+                      spy={true}
+                      smooth={true}
+                      offset={-70}
+                      duration={500}
+                    >Learn</Link>
 
-                  <a
-                    href='#'
-                    className='hover:bg-orange text-dark-blue px-1 py-1 rounded-md text-sm font-medium'
-                  >
-                    Code
-                  </a>
+                  <Link className='hover:bg-orange text-dark-blue px-1 py-1 rounded-md text-sm font-medium'
+                      activeClass="active"
+                      to="code"
+                      spy={true}
+                      smooth={true}
+                      offset={-70}
+                      duration={500}
+                    >Code</Link>
 
-                  <a
-                    href='#'
-                    className='hover:bg-orange text-dark-blue px-1 py-1 rounded-md text-sm font-medium'
-                  >
-                    Team
-                  </a>
+                  <Link className='hover:bg-orange text-dark-blue px-1 py-1 rounded-md text-sm font-medium'
+                      activeClass="active"
+                      to="team"
+                      spy={true}
+                      smooth={true}
+                      offset={-70}
+                      duration={500}
+                    >Team</Link>
                 </div>
               </div>
               <div className='-mr-2 flex md:hidden'>
