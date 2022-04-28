@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import axios, { AxiosResponse } from 'axios';
 import { createClient, RedisClientType, RedisClientOptions } from 'redis';
 import { GraphQLResolveInfo } from 'graphql';
@@ -39,6 +40,8 @@ export class Desolver {
   private hasNext: number = 0;
   private pipeline: DesolverFragment[] = [];
   private cache: RedisClientType;
+  private id: number = 0;
+  private idCache: Record<string, ResolverWrapper> = {}
 
   constructor(public config?: DesolverConfig) {
     if (this.config?.cacheDesolver === true) {
@@ -67,6 +70,9 @@ export class Desolver {
         type === this.config.applyResolverType
       ) {
         for (const field in resolvers[type]) {
+          if(resolvers[type][field].name === 'desolver') {
+            continue;
+          }
           // console.log('inside if statement', type);
           resolvers[type][field] = this.useRoute(resolvers[type][field]);
         }
@@ -75,6 +81,10 @@ export class Desolver {
         this.config.applyResolverType === 'All'
       ) {
         for (const field in resolvers[type]) {
+          if(resolvers[type][field].name === 'desolver') {
+            console.log(field)
+            continue;
+          }
           // console.log('Im here!!!', type);
           resolvers[type][field] = this.useRoute(resolvers[type][field]);
         }
@@ -84,7 +94,8 @@ export class Desolver {
   }
 
   public useRoute(...desolvers: DesolverFragment[]): ResolverWrapper {
-    return async (
+    const newId = uuidv4();
+    this.idCache[this.id] = async (
       parent: Record<string, unknown>,
       args: Record<string, unknown>,
       context: Record<string, unknown>,
@@ -98,6 +109,13 @@ export class Desolver {
         ...desolvers
       );
     };
+    
+    Object.defineProperty(this.idCache[this.id], 'name',  {
+      value: 'desolver',
+      writable: false
+    })
+    console.log(this.idCache[this.id].name, `what?`)
+    return this.idCache[this.id++]
   }
 
   private async composePipeline(
