@@ -59,7 +59,7 @@ GraphQL Fragments are used to share logic throughout multiple queries or mutatio
 
 ### **EscapeHatch and ds Arguments**
 
-While executing the pipeline, DeSolver offers two additional arguments to pass: ds and escapeHatch. 'ds' is an object that can be passed into a DeSolver query to provide additional configuration of the expected response value(s). The ds object operates much like the GraphQL context object but within the DeSolver execution. The DeSolver escapeHatch argument can be used for additional configuration to stop the DeSolver pipeline and therefore the resolvers from completing their execution if a condition is met. The escapeHatch offers greater control to developer, denying the execution to continue running if there's reason to stop aside from an error. For example, developers may want to confirm the session is still valid for the client prior to completing a query.
+While executing the pipeline, DeSolver offers two additional arguments to pass: ds and escapeHatch. 'ds' is an object that can be passed into a DeSolver query to provide additional configuration of the expected response value(s), similiar to res.locals within Express. The DeSolver escapeHatch argument can be used for additional configuration to stop the DeSolver pipeline and therefore the resolvers from completing their execution if a condition is met. The escapeHatch offers greater control to developer, denying the execution to continue running if there's reason to stop aside from an error. For example, developers may want to confirm the session is still valid for the client prior to completing a query.
 
 <p><br>
 <h3 href="#desolvererrors"></h3>
