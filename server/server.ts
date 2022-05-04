@@ -7,12 +7,12 @@ import bodyParser, { Request } from 'express'
 import axios, { AxiosResponse } from 'axios';
 import { QueryArrayResult } from 'pg'
 import db from '../models/elephantConnect'
-import { Desolver, DesolverFragment, Resolvers, pokemonParser } from './desolver'
+import { Desolver, DesolverFragment, Resolvers } from './desolver'
 const app = express();
 const PORT = 3000;
 
 const desolver = new Desolver({
-  cacheDesolver: false,
+  cacheDesolver: true,
   applyResolverType: 'All'
 })
 
@@ -195,6 +195,30 @@ async function startApolloServer(typeDefs: DocumentNode, resolvers: Resolvers, a
 async function consoleSomething(input: string, another?: any) {
   console.log(input)
   console.log(another)
+}
+
+// Demonstration middleware/Desolver Fragment to perform asynchronous actions prior to executing resolvers
+function pokemonParser(): DesolverFragment {
+  function getRandomIntInclusive(min: number, max: number): number {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  }
+  return async (parent, args, context, info, next, escapeHatch) => {
+    try {
+      const randomNum = getRandomIntInclusive(0, 1126);
+      console.log(randomNum);
+      const pokeRes: AxiosResponse = await axios({
+        method: 'GET',
+        url: `https://pokeapi.co/api/v2/pokemon?limit=100000&offset=0`,
+      });
+      const { name, url } = pokeRes.data.results[randomNum];
+      console.log({ name, url });
+      return next();
+    } catch (e) {
+      console.error(e);
+    }
+  };
 }
 
 export = { startApolloServer, typeDefs, resolvers };
