@@ -98,9 +98,8 @@ DeSolver Fragments are this frameworks version of middleware functions.  Each re
 ```javascript
 const desolverFragment = (parent, args, context, info, next, escape, ds) => {
   // write your resolver business logic here
-  // The first 4 parameters associated with the current resolver are usable here
-
-  // ds - a context object for passing data from one function to the next
+  // parent, args, context and info are available for use here
+  // ds context object is also provided by this framework
 
   // @return
     // next() - calls the next function in the middleware chain
