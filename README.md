@@ -72,6 +72,10 @@ const desolverConfig = {
 }
 ```
 
+- `cacheDesolver`: Set to true to enable Redis caching, by default if nothing is passed, the default redis instance will be started. Set to false to disable this behavior.
+
+- `applyResolverType`: Takes a string value that represents either a root query ( `Query`, `Mutation` ) or some other custom type as defined in your schema.  Specify `Root` to chain both `Query` and `Mutation`. Set to `All` to wrap every resolver. By default, if none is specified, all resolvers will be chained to the middleware pipeline. 
+
 The desolverConfig object can also be defined with configuration options from Redis. See [node-redis](https://github.com/redis/node-redis) for a list of additional custom configuration options that can be defined from Redis.
 <br><br>
 
@@ -100,6 +104,14 @@ const desolverFragment = (parent, args, context, info, next, escape, ds) => {
     // escapeHatch(input) - pass a value to input to resolve immediately
 }
 ```
+
+The Desolver Parameters are as follows:
+- ```parent```: Sometimes referred to as the root object. The same parent/root object which is the result of the previous query.
+- ```arguments```:
+- ```context```: 
+- ```info```:
+- ```next```: Calls the next Desolver Fragment in the middleware chain.
+- escapeHatch: Immediately resolves the current root or field resolver.
 
 
 <h3 href="#pipeline"></h3>
@@ -168,6 +180,45 @@ const resolvers = desolver.apply({
     getPostsById: (parent, { id }, context, info) => {
       return ctx.db.findPosts(id)
     },
+  }
+})
+```
+<br><br>
+
+<h3 href="#targetatype"></h3>
+
+### **Targeting a specific resolver or type**
+
+If you would like to chain your resolvers to a specific root type or field resolvers, specify the root query or field to chain the middleware pipeline to.
+
+See the example below:
+
+```javascript
+// Specify when instantiating Desolver which resolvers to chain to in the
+// configuration object
+const desolver = new Desolver({
+  applyResolverType: 'Query'
+})
+
+desolver.use(authentication)
+
+const resolvers = desolver.apply({
+  Query: {
+    // Only these root query resolvers will be guarded by the authentication
+    // function
+    getUserById: desolver.useRoute(desolverFragment1, desolverFragment2),
+
+    getPostsById: (parent, { id }, context, info) => {
+      return ctx.db.findPosts(id)
+    },
+  }
+
+  Mutation: {
+    createUser: (parent, root, args, context, info) => {
+      // This query is not guarded by the authentication logic
+      // set applyResolverType to 'Root' to wrap chain to both 
+      // 'Query' and 'Mutation'
+    }
   }
 })
 ```
