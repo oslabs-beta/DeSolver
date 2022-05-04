@@ -106,7 +106,7 @@ const desolverFragment = (parent, args, context, info, next, escape, ds) => {
 
 ### **Creating your middleware pipeline**
 
-Utilize the 'use' method on the desolver instance to generate your pipeline of prehook functions. Functions passed to desolver.use() will be pushed to the function pipeline. Multiple successive invocations of desolver.use() will add additional functions to the pipeline.
+Utilize the 'use' method on the desolver instance to generate your pipeline of prehook functions. Functions passed to ```desolver.use()``` will be pushed to the function pipeline. Multiple successive invocations of ```desolver.use()``` will add additional functions to the pipeline.
 
 The following is an example use case for the desolver middleware pipeline involving guarding your root queries with authentication logic:
 
@@ -144,7 +144,7 @@ const resolvers = desolver.apply({
 
 ### **Define your resolvers as multiple DeSolver fragments**
 
-If you would like to define your resolvers as a chain of desolver fragments, you can declare a resolver function utilizing desolver.useRoute().  The useRoute method takes any number of Desolver Fragment middleware functions and forms a "route" for your field resolver.
+If you would like to define your resolvers as a chain of desolver fragments, you can declare a resolver function utilizing ```desolver.useRoute()```.  The useRoute method takes any number of Desolver Fragment middleware functions and forms a "route" for your field resolver.
 
 See the example below:
 
