@@ -10,9 +10,12 @@
 - [About](https://github.com/oslabs-beta/DeSolver/#about)
 - [Getting Started](https://github.com/oslabs-beta/DeSolver/#gettingstarted)
 - [How to Use](https://github.com/oslabs-beta/DeSolver/#howtouse)
-  - [DeSolver Pipeline](https://github.com/oslabs-beta/DeSolver/#pipeline)
-  - [Other DeSolver Arguments](https://github.com/oslabs-beta/DeSolver/#desolverargs)
-  - [Error Handling](https://github.com/oslabs-beta/DeSolver/#desolvererrors)
+  - [DeSolver Instance](https://github.com/oslabs-beta/DeSolver/#desolverinstance)
+  - [Cache](https://github.com/oslabs-beta/DeSolver/#cache)
+  - [Desolver Fragments](https://github.com/oslabs-beta/DeSolver/#desolverfragments)
+  - [Creating your Middleware Pipeline](https://github.com/oslabs-beta/DeSolver/#pipeline)
+  - [Define your resolvers as multiple fragments](https://github.com/oslabs-beta/DeSolver/#multiplefragments)
+  - [Targeting a specific resolver type](https://github.com/oslabs-beta/DeSolver/#targetatype)
 - [Example](https://github.com/oslabs-beta/DeSolver/#desolverexample)
 - [Contributors](https://github.com/oslabs-beta/DeSolver/#team)
 - [License](https://github.com/oslabs-beta/DeSolver/#license)
@@ -24,9 +27,9 @@
 
 DeSolver for [GraphQL](https://graphql.org/): a lightweight, minimalist, unopinionated Node.js GraphQL framework providing a powerful yet approachable API for composing modular and reusable resolver business logic.
 
-DeSolver aims to provide an easy to use and approachable API to write reusable code logic across GraphQL resolvers. It utilizes the middleware pattern as seen in other popular frameworks as a way to create "routing" for your resolvers.
+DeSolver aims to provide an easy to use and approachable API to write modular, reusable code logic across GraphQL resolvers. It utilizes the middleware pattern as seen in other popular frameworks as a way to create "routing" for your resolvers.
 
-The DeSolver instance methods allows one to load a pipeline with mini-resolver functions, and then forms a wrapper around the resolver map object, allowing one to chain a series of functions or "pre-hook" functions to execute prior to a query or mutation.  This minimizes the need to wrap individual resolver functions manually, thereby reducing templating and additional boilerplate. It follows the "write once, run everywhere" mantra.
+The DeSolver instance methods allows one to load a pipeline with mini-resolver functions, and then forms a wrapper around the resolver map object, allowing one to chain a series of functions or "pre-hook" functions to execute prior to a query or mutation.  This minimizes the need to wrap individual resolver functions manually, thereby reducing templating and additional boilerplate. Composing your resolvers in this way can help keep your resolver code more maintainable, scalable and testable. It follows the "write once, run everywhere" mantra.
 
 <p><br>
 
@@ -35,6 +38,7 @@ The DeSolver instance methods allows one to load a pipeline with mini-resolver f
 # Getting Started
 
 1. Installing Desolver
+- Note: DeSolver is currently in beta, and an npm package is not yet available. This README will be updated when a package is available. Read on for more information on the intended functionality of the framework.
 
 - Start by running the npm command:
 
@@ -53,7 +57,7 @@ npm install desolver
 
 # How to use
 
-<h3 href="#Desolver Instance"></h3>
+<h3 href="#desolverinstance"></h3>
 
 ### **Desolver Instance and Configuration**
 
@@ -83,14 +87,14 @@ The desolverConfig object can also be defined with configuration options from Re
 
 ### **Cache**
 
-DeSolver utilizes Redis caching to for greater query optimization. If cacheDesolver option is set to true, this will enable automated caching of resolver queries. DeSolver will automatically generate a unique key for the Redis cache based on path property from the info argument. Set the cacheDesolver property to false if you would like to disable this default behavior and provide your own caching logic.
+DeSolver utilizes Redis caching to for greater query optimization. If `cacheDesolver` option is set to `true`, this will enable automated caching of resolver queries. DeSolver will automatically generate a unique key for the Redis cache based on path property from the info argument. Set the `cacheDesolver` property to `false` if you would like to disable this default behavior and provide your own caching logic.
 <br><br>
 
-<h3 href="#Desolver Fragments"></h3>
+<h3 href="#desolverfragments"></h3>
 
 ### **Desolver Fragments**
 
-Desolver Fragments are this frameworks version of middleware functions.  Each resolver can be decomposed into a series of "fragment" functions.  To maintain full functionality of a normal resolver, it provides the current field resolvers first 4 arguments (the root/parent, arguments, context, and info) as well as 3 additional custom parameters (next, escape, and ds)
+DeSolver Fragments are this frameworks version of middleware functions.  Each resolver can be decomposed into a series of "fragment" functions.  To maintain full functionality of a normal resolver, it provides the current field resolvers first 4 arguments (the root/parent, arguments, context, and info) as well as 3 additional custom parameters (next, escape, and ds)
 
 ```javascript
 const desolverFragment = (parent, args, context, info, next, escape, ds) => {
@@ -105,20 +109,26 @@ const desolverFragment = (parent, args, context, info, next, escape, ds) => {
 }
 ```
 
-The Desolver Parameters are as follows:
-- ```parent```: Sometimes referred to as the root object. The same parent/root object which is the result of the previous query.
-- ```arguments```:
-- ```context```: 
-- ```info```:
-- ```next```: Calls the next Desolver Fragment in the middleware chain.
-- escapeHatch: Immediately resolves the current root or field resolver.
+The DeSolver Parameters are as follows:
+
+The first four parameters are the normal parameters for any resolver:
+- `parent`: Sometimes referred to as the root object. The same parent/root object which is the result of the previous parent/type.
+- `arguments`: Arguments provided to the root or field resolver.
+- `context`: a mutable object that is provided to all resolvers.
+- `info`: field specific information relevant to the query.
+
+The final three parameters are additional parameters provided by the DeSolver framework:
+- `next`: Calls the next DeSolver Fragment in the middleware chain.
+- `escapeHatch`: Immediately resolves the current root or field resolver.
+- `ds`: A context object that can be passed from one DeSolver Fragment to the next. Similar in functionality to res.locals in the Express framework.
+<br><br>
 
 
 <h3 href="#pipeline"></h3>
 
 ### **Creating your middleware pipeline**
 
-Utilize the 'use' method on the desolver instance to generate your pipeline of prehook functions. Functions passed to ```desolver.use()``` will be pushed to the function pipeline. Multiple successive invocations of ```desolver.use()``` will add additional functions to the pipeline.
+Utilize the `desolver.use()` method on the desolver instance to generate your pipeline of prehook functions. Any number of functions arguments passed to `desolver.use()` will be pushed to the function pipeline. Multiple successive invocations of `desolver.use()` will also add additional functions to the pipeline.
 
 The following is an example use case for the desolver middleware pipeline involving guarding your root queries with authentication logic:
 
@@ -152,11 +162,13 @@ const resolvers = desolver.apply({
 ```
 <br><br>
 
-<h3 href="#chainofdesolvers"></h3>
+<h3 href="#multiplefragments"></h3>
 
 ### **Define your resolvers as multiple DeSolver fragments**
 
-If you would like to define your resolvers as a chain of desolver fragments, you can declare a resolver function utilizing ```desolver.useRoute()```.  The useRoute method takes any number of Desolver Fragment middleware functions and forms a "route" for your field resolver.
+If you would like to define your root or field level resolvers as a chain of DeSolver fragments, you can declare a resolver function utilizing `desolver.useRoute()`.  The `useRoute` method takes any number of Desolver Fragment middleware functions and forms a "route" for your root or field resolver.
+
+All methods `desolver.use()`, `desolver.apply()`, and `desolver.useRoute()` can be utilized together to form a more modular and scalable way to compose your resolvers.
 
 See the example below:
 
@@ -189,7 +201,7 @@ const resolvers = desolver.apply({
 
 ### **Targeting a specific resolver or type**
 
-If you would like to chain your resolvers to a specific root type or field resolvers, specify the root query or field to chain the middleware pipeline to.
+If you would like to chain your resolvers to a specific root type or field resolvers, specify the root query or field to chain the middleware pipeline to in the configuration object passed to the DeSolver constructor.
 
 See the example below:
 
@@ -215,37 +227,13 @@ const resolvers = desolver.apply({
 
   Mutation: {
     createUser: (parent, root, args, context, info) => {
-      // This query is not guarded by the authentication logic
+      // This mutation is not guarded by the authentication logic
       // set applyResolverType to 'Root' to wrap chain to both 
       // 'Query' and 'Mutation'
     }
   }
 })
 ```
-<br><br>
-
-<h3 href="#desolverargs"></h3>
-
-### **EscapeHatch and ds Arguments**
-
-While executing the pipeline, DeSolver offers two additional arguments to pass: ds and escapeHatch. 'ds' is an object that can be passed into a DeSolver query to provide additional configuration of the expected response value(s), similiar to res.locals within Express. The DeSolver escapeHatch argument can be used for additional configuration to stop the DeSolver pipeline and therefore the resolvers from completing their execution if a condition is met. The escapeHatch offers greater control to developer, denying the execution to continue running if there's reason to stop aside from an error. For example, developers may want to confirm the session is still valid for the client prior to completing a query.
-
-<p><br>
-<h3 href="#desolvererrors"></h3>
-
-### **Error Handling**
-
-By maintaining an error logging object within the DeSolver class, the DeSolver pipeline can provide individual resolver or field level error reporting back to the .
-&nbsp;
-
-<p><br>
-<h3 href="#example"></h3>
-
-# **Example**
-
-XXX Pokeman parser demo???
-
-<!-- optimization demo gif that shows side by side of before desolver and after-->
 <p><br>
 <h3 href="#team"></h3>
 
