@@ -63,7 +63,7 @@ In your GraphQL server or resolvers file create a new instance of DeSolver:
 const desolver = new Desolver(desolverConfig)
 ```
 
-The following optional oboject can be declared in the configuration options object can be passed to DeSolver:
+The following optional configuration object can be declared as the argument of the DeSolver constructor:
 
 ```javascript
 const desolverConfig = {
@@ -72,24 +72,48 @@ const desolverConfig = {
 }
 ```
 
+The desolverConfig object can also be defined with configuration options from Redis. See [node-redis](https://github.com/redis/node-redis) for a list of additional custom configuration options that can be defined from Redis.
+<br><br>
+
 <h3 href="#cache"></h3>
 
 ### **Cache**
 
-DeSolver utilizes Redis caching to for greater query optimization. If cacheDesolver option is set to true, this will enable automated caching of resolver queries. Set to false if you would like to disable this default behavior and provide your own caching logic.
-<p>
+DeSolver utilizes Redis caching to for greater query optimization. If cacheDesolver option is set to true, this will enable automated caching of resolver queries. DeSolver will automatically generate a unique key for the Redis cache based on path property from the info argument. Set the cacheDesolver property to false if you would like to disable this default behavior and provide your own caching logic.
+<br><br>
+
+<h3 href="#Desolver Fragments"></h3>
+
+### **Desolver Fragments**
+
+Desolver Fragments are this frameworks version of middleware functions.  Each resolver can be decomposed into a series of "fragment" functions.  To maintain full functionality of a normal resolver, it provides the current field resolvers first 4 arguments (the root/parent, arguments, context, and info) as well as 3 additional custom parameters (next, escape, and ds)
+
+```javascript
+const desolverFragment = (parent, args, context, info, next, escape, ds) => {
+  // write your resolver business logic here
+  // The first 4 parameters associated with the current resolver are usable here
+
+  // ds - a context object for passing data from one function to the next
+
+  // @return
+    // next() - calls the next function in the middleware chain
+    // escapeHatch(input) - pass a value to input to resolve immediately
+}
+```
+
 
 <h3 href="#pipeline"></h3>
 
 ### **Creating your middleware pipeline**
 
-Utilize the 'use' method on the desolver instance to generate your pipeline of prehook functions.
+Utilize the 'use' method on the desolver instance to generate your pipeline of prehook functions. Functions passed to desolver.use() will be pushed to the function pipeline. Multiple successive invocations of desolver.use() will add additional functions to the pipeline.
 
 The following is an example use case for the desolver middleware pipeline involving guarding your root queries with authentication logic:
 
 ```javascript
 const desolver = new Desolver()
 
+// Declare authentication Desolver Fragment Function
 const authentication = (parent, args, context, info, next, escape, ds) => {
   // Define some authentication logic here using args or context
   // throw error if not authenticated
@@ -114,34 +138,41 @@ const resolvers = desolver.apply({
   // Additional resolvers here
 })
 ```
-<p>
+<br><br>
 
-<h3 href="#Desolver Fragments"></h3>
+<h3 href="#chainofdesolvers"></h3>
 
-### **Desolver Fragments**
+### **Define your resolvers as multiple DeSolver fragments**
 
-Desolver Fragments are this frameworks version of middleware functions.  Each resolver is decomposed into a series of "fragment" functions.  To give full functionality of a normal resolver, it provides the current field resolvers first 4 arguments (the root/parent, arguments, context, and info) as well as 3 additional custom parameters (next, escape, and ds)
+If you would like to define your resolvers as a chain of desolver fragments, you can declare a resolver function utilizing desolver.useRoute().  The useRoute method takes any number of Desolver Fragment middleware functions and forms a "route" for your field resolver.
+
+See the example below:
 
 ```javascript
-const desolverFragment = (parent, args, context, info, next, escape, ds) => {
-  // write your resolver business logic here
-  // The first 4 parameters associated with the current resolver are usable here
+// desolver.use(), desolver.apply() and desolver.useRoute() can 
+// be used together to create longer chains
 
-  // ds - a context object for passing data from one function to the next
+desolver.use(authentication)
 
-  // @return
-    // next() - calls the next function in the middleware chain
-    // escapeHatch(input) - pass a value to input to resolve immediately
-}
+const resolvers = desolver.apply({
+  Query: {
+    // Define your resolver using desolver.useRoute() and add 
+    // any number of desolver fragments to modularize resolver logic
+    // The authentication function will execute followed by desolverFragment1
+    // and desolverFragment2
+    getUserById: desolver.useRoute(desolverFragment1, desolverFragment2),
+
+    // desolver.use(), desolver.apply(), desolver.useRoute() and 
+    // normal resolver functions used together seamlessly throughout the
+    // resolver map
+    getPostsById: (parent, { id }, context, info) => {
+      return ctx.db.findPosts(id)
+    },
+  }
+})
 ```
+<br><br>
 
-<h3 href="#pipeline"></h3>
-
-### **Desolver Pipeline**
-
-GraphQL Fragments are used to share logic throughout multiple queries or mutations. The DesolverFragment performs similar logic with the ResolverWrapper. The ResolverWrapper is a type that maintains the four arguments of the native GraphQL Resolvers (parent, args, context, info), within the DeSolver. When the route for desolvers is called (useRoute), the DesolverFragment returns a promise that configures a pipeline or an array, which configures all the resolvers into the DeSolver object. This pipeline is executed on use of the DeSolver, iterating through the pipeline via next callbacks, to handle the request response cycle of the resolvers.
-
-<p><br>
 <h3 href="#desolverargs"></h3>
 
 ### **EscapeHatch and ds Arguments**
