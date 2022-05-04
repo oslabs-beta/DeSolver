@@ -16,7 +16,6 @@
   - [Creating your Middleware Pipeline](https://github.com/oslabs-beta/DeSolver/#pipeline)
   - [Define your resolvers as multiple fragments](https://github.com/oslabs-beta/DeSolver/#multiplefragments)
   - [Targeting a specific resolver type](https://github.com/oslabs-beta/DeSolver/#targetatype)
-- [Example](https://github.com/oslabs-beta/DeSolver/#desolverexample)
 - [Contributors](https://github.com/oslabs-beta/DeSolver/#team)
 - [License](https://github.com/oslabs-beta/DeSolver/#license)
 
