@@ -9,7 +9,7 @@
 
 - [About](https://github.com/oslabs-beta/DeSolver/#about)
 - [Getting Started](https://github.com/oslabs-beta/DeSolver/#gettingstarted)
-- [Features](https://github.com/oslabs-beta/DeSolver/#features)
+- [How to Use](https://github.com/oslabs-beta/DeSolver/#howtouse)
   - [DeSolver Pipeline](https://github.com/oslabs-beta/DeSolver/#pipeline)
   - [Other DeSolver Arguments](https://github.com/oslabs-beta/DeSolver/#desolverargs)
   - [Error Handling](https://github.com/oslabs-beta/DeSolver/#desolvererrors)
@@ -22,9 +22,11 @@
 
 # About
 
-DeSolver for [GraphQL](https://graphql.org/): a minimalist and unopinionated Node.js GraphQL framework providing a powerful yet approachable API for modularizing resolver business logic.
+DeSolver for [GraphQL](https://graphql.org/): a lightweight, minimalist, unopinionated Node.js GraphQL framework providing a powerful yet approachable API for composing modular and reusable resolver business logic.
 
-DeSolver is an optimized solution for writing resolvers in GraphQL. Leveraging promises, private and public functions, DeSolver forms a wrapper around the resolver queries eliminating the template or boilerplate code needed. A pipeline (or array) of resolvers are executed with error handling between each resolver. Desolver even has an 'escape hatch' that permits ending the pipeline at your query needs or due to conditional statements.
+DeSolver aims to provide an easy to use and approachable API to write reusable code logic across GraphQL resolvers. It utilizes the middleware pattern as seen in other popular frameworks as a way to create "routing" for your resolvers.
+
+The DeSolver instance methods allows one to load a pipeline with mini-resolver functions, and then forms a wrapper around the resolver map object, allowing one to chain a series of functions or "pre-hook" functions to execute prior to a query or mutation.  This minimizes the need to wrap individual resolver functions manually, thereby reducing templating and additional boilerplate. It follows the "write once, run everywhere" mantra.
 
 <p><br>
 
@@ -33,13 +35,61 @@ DeSolver is an optimized solution for writing resolvers in GraphQL. Leveraging p
 # Getting Started
 
 1. Installing Desolver
-2. OTHER INFORMATION
+
+- Start by running the npm command:
+
+```javascript
+npm install desolver
+```
+- The DeSolver framework works best when combined with [GraphQL tools](https://www.graphql-tools.com/docs/generate-schema) Executable Schema package. It is recommended to download that package and use that to generate your type defintions, resolver map and schema. 
+
+- The DeSolver framework also works with the popular Apollo Server API.  DeSolver can be utilized when combined with the resolver map object in Apollo Server.
+
+- Redis is also used for caching resolvers. Check out [Redis](https://redis.io) and [node-redis](https://github.com/redis/node-redis) for installation details. If you wish to opt out of using Redis, and provide your own caching logic, DeSolver provides a configuration option to disable this default behavior.
 
 <p><br>
 
-<h2 href="#features"></h2>
+<h2 href="#howtouse"></h2>
 
-# Features
+# How to use
+
+<h3 href="#Desolver Instance"></h3>
+
+### **Desolver Instance and Configuration**
+
+At the top of your server or resolvers file create a new instance of DeSolver
+
+```javascript
+const desolver = new Desolver()
+```
+
+The following optional options can be declared in the configuration options object can be passed to DeSolver:
+
+```typescript
+const desolverConfig = {
+  cacheDesolver?: boolean, // true to enable Redis caching
+  applyResolverType?: string // resolver type from your schema 
+}
+```
+The DeSolver Config also takes 
+
+<h3 href="#Desolver Fragments"></h3>
+
+### **Desolver Fragments**
+
+Desolver Fragments are this frameworks version of middleware functions.  Each resolver is decomposed into a series of "fragment" functions.  To give full functionality of a normal resolver, it provides the current field resolvers first 4 arguments (the root/parent, arguments, context, and info) as well as 3 additional custom parameters (next, escpae, and ds)
+
+```javascript
+const desolverFragment = (parent, args, context, info, next, escape, ds) => {
+  // write your resolver business logic here
+  // The first 4 parameters associated with the current resolver are usable here
+
+  //@return
+    // next() - calls the next function in the middleware chain
+    // escapeHatch(input) - pass a value to input to resolve immediately
+    // ds - a context object for passing data from one function to the next
+}
+```
 
 <h3 href="#cache"></h3>
 
@@ -48,6 +98,7 @@ DeSolver is an optimized solution for writing resolvers in GraphQL. Leveraging p
 DeSolver utilizes Redis caching to for greater optimization. [Redis](https://redis.io) is an "open-source, in-memory data store...used as a database, cache, streaming engine, and message broker." Desolver employs Redis caching for faster resolver query results or even for developer use for authentication and session storage. Using Redis' ability to cache with a hash key for the field queries lead to DeSolver seeing early testing results optimized by 400%.
 
 <p><br>
+
 <h3 href="#pipeline"></h3>
 
 ### **Desolver Pipeline**
