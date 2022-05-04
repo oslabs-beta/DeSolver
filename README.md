@@ -57,37 +57,18 @@ npm install desolver
 
 ### **Desolver Instance and Configuration**
 
-At the top of your server or resolvers file create a new instance of DeSolver
+In your GraphQL server or resolvers file create a new instance of DeSolver:
 
 ```javascript
-const desolver = new Desolver()
+const desolver = new Desolver(desolverConfig)
 ```
 
-The following optional options can be declared in the configuration options object can be passed to DeSolver:
+The following optional oboject can be declared in the configuration options object can be passed to DeSolver:
 
-```typescript
+```javascript
 const desolverConfig = {
-  cacheDesolver?: boolean, // true to enable Redis caching
-  applyResolverType?: string // resolver type from your schema 
-}
-```
-The DeSolver Config also takes 
-
-<h3 href="#Desolver Fragments"></h3>
-
-### **Desolver Fragments**
-
-Desolver Fragments are this frameworks version of middleware functions.  Each resolver is decomposed into a series of "fragment" functions.  To give full functionality of a normal resolver, it provides the current field resolvers first 4 arguments (the root/parent, arguments, context, and info) as well as 3 additional custom parameters (next, escpae, and ds)
-
-```javascript
-const desolverFragment = (parent, args, context, info, next, escape, ds) => {
-  // write your resolver business logic here
-  // The first 4 parameters associated with the current resolver are usable here
-
-  //@return
-    // next() - calls the next function in the middleware chain
-    // escapeHatch(input) - pass a value to input to resolve immediately
-    // ds - a context object for passing data from one function to the next
+  cacheDesolver?: boolean, // set to true to enable Redis caching
+  applyResolverType?: string // resolver type to target for running prehooks
 }
 ```
 
@@ -95,9 +76,64 @@ const desolverFragment = (parent, args, context, info, next, escape, ds) => {
 
 ### **Cache**
 
-DeSolver utilizes Redis caching to for greater optimization. [Redis](https://redis.io) is an "open-source, in-memory data store...used as a database, cache, streaming engine, and message broker." Desolver employs Redis caching for faster resolver query results or even for developer use for authentication and session storage. Using Redis' ability to cache with a hash key for the field queries lead to DeSolver seeing early testing results optimized by 400%.
+DeSolver utilizes Redis caching to for greater query optimization. If cacheDesolver option is set to true, this will enable automated caching of resolver queries. Set to false if you would like to disable this default behavior and provide your own caching logic.
+<p>
 
-<p><br>
+<h3 href="#pipeline"></h3>
+
+### **Creating your middleware pipeline**
+
+Utilize the 'use' method on the desolver instance to generate your pipeline of prehook functions.
+
+The following is an example use case for the desolver middleware pipeline involving guarding your root queries with authentication logic:
+
+```javascript
+const desolver = new Desolver()
+
+const authentication = (parent, args, context, info, next, escape, ds) => {
+  // Define some authentication logic here using args or context
+  // throw error if not authenticated
+}
+
+// Add to the authentication function to pipeline with desolver.use()
+// This function will execute prior to all resolvers
+desolver.use(authentication)
+
+// Invoke desolver.apply() method with the resolver map object passed
+const resolvers = desolver.apply({
+  Query: {
+    getUserById: (parent, args, context, info) => {
+      // this root query is now guarded by the authentication function
+    },
+
+    getPostsById: (parent, args, context, info) => {
+      // this root query is now guarded by the authentication function
+    },
+  }
+
+  // Additional resolvers here
+})
+```
+<p>
+
+<h3 href="#Desolver Fragments"></h3>
+
+### **Desolver Fragments**
+
+Desolver Fragments are this frameworks version of middleware functions.  Each resolver is decomposed into a series of "fragment" functions.  To give full functionality of a normal resolver, it provides the current field resolvers first 4 arguments (the root/parent, arguments, context, and info) as well as 3 additional custom parameters (next, escape, and ds)
+
+```javascript
+const desolverFragment = (parent, args, context, info, next, escape, ds) => {
+  // write your resolver business logic here
+  // The first 4 parameters associated with the current resolver are usable here
+
+  // ds - a context object for passing data from one function to the next
+
+  // @return
+    // next() - calls the next function in the middleware chain
+    // escapeHatch(input) - pass a value to input to resolve immediately
+}
+```
 
 <h3 href="#pipeline"></h3>
 
