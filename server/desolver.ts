@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import { v4 as uuidv4 } from 'uuid';
 import { createClient, RedisClientType, RedisClientOptions } from 'redis';
 import { GraphQLResolveInfo } from 'graphql';
 
@@ -39,17 +39,18 @@ export class Desolver {
   private hasNext: number = 0;
   private pipeline: DesolverFragment[] = [];
   private cache: RedisClientType;
+  private idCache: Record<string, ResolverWrapper> = {};
 
   constructor(public config?: DesolverConfig) {
     if (this.config?.cacheDesolver === true) {
-      // console.log('Redis cache starting with custom config')
+      // Redis cache starting with custom config
       this.cache = createClient(this.config);
       this.cache.connect();
       this.cache.on('error', (err) => console.log('Redis Client Error', err));
     } else if (this.config?.cacheDesolver === false) {
       // Do nothing, cache not started
     } else {
-      // console.log('No Desolver Configuration specified, starting default Redis Client')
+      // No Desolver Configuration specified, starting default Redis Client
       this.cache = createClient();
       this.cache.connect();
       this.cache.on('error', (err) => console.log('Redis Client Error', err));
@@ -67,7 +68,10 @@ export class Desolver {
         type === this.config.applyResolverType
       ) {
         for (const field in resolvers[type]) {
-          // console.log('inside if statement', type);
+          // Skips wrapping the field if the function id is stored in the cache already
+          if (this.idCache[resolvers[type][field].name]) {
+            continue;
+          }
           resolvers[type][field] = this.useRoute(resolvers[type][field]);
         }
       } else if (
@@ -75,7 +79,10 @@ export class Desolver {
         this.config.applyResolverType === 'All'
       ) {
         for (const field in resolvers[type]) {
-          // console.log('Im here!!!', type);
+          // Skips wrapping the field if the function id is stored in the cache already
+          if (this.idCache[resolvers[type][field].name]) {
+            continue;
+          }
           resolvers[type][field] = this.useRoute(resolvers[type][field]);
         }
       }
@@ -84,7 +91,9 @@ export class Desolver {
   }
 
   public useRoute(...desolvers: DesolverFragment[]): ResolverWrapper {
-    return async (
+    const newId = uuidv4();
+
+    this.idCache[newId] = async (
       parent: Record<string, unknown>,
       args: Record<string, unknown>,
       context: Record<string, unknown>,
@@ -98,6 +107,13 @@ export class Desolver {
         ...desolvers
       );
     };
+
+    Object.defineProperty(this.idCache[newId], 'name', {
+      value: newId,
+      writable: false,
+    });
+
+    return this.idCache[newId];
   }
 
   private async composePipeline(
@@ -110,7 +126,7 @@ export class Desolver {
     if (this.config.cacheDesolver === true) {
       const cachedValue = await getCachedValue(this.cache, info);
       if (cachedValue) {
-        console.log('Cache Hit!');
+        // Cache Hit!
         return JSON.parse(cachedValue);
       }
     }
@@ -125,7 +141,7 @@ export class Desolver {
     );
 
     if (this.config.cacheDesolver === true) {
-      console.log('Setting cached value');
+      // Setting Cached Value
       await setCachedValue(this.cache, info, resolvedValue);
     }
 
@@ -232,28 +248,4 @@ async function setCachedValue(
     JSON.stringify(info.path),
     JSON.stringify(resolvedValue)
   );
-}
-
-// Demonstration middleware/Desolver Fragment to perform asynchronous actions prior to executing resolvers
-export function pokemonParser(): DesolverFragment {
-  function getRandomIntInclusive(min: number, max: number): number {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1) + min);
-  }
-  return async (parent, args, context, info, next, escapeHatch) => {
-    try {
-      const randomNum = getRandomIntInclusive(0, 1126);
-      console.log(randomNum);
-      const pokeRes: AxiosResponse = await axios({
-        method: 'GET',
-        url: `https://pokeapi.co/api/v2/pokemon?limit=100000&offset=0`,
-      });
-      const { name, url } = pokeRes.data.results[randomNum];
-      console.log({ name, url });
-      return next();
-    } catch (e) {
-      console.error(e);
-    }
-  };
 }
