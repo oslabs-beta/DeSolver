@@ -1,0 +1,35 @@
+{
+  "name": "desolver",
+  "version": "0.1.0",
+  "description": "GraphQL framework providing a powerful API to modularize resolver business logic",
+  "main": "./index/desolver.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oslabs-beta/DeSolver.git"
+  },
+  "keywords": [
+    "graphQL",
+    "Redis",
+    "resolver",
+    "cache",
+    "modular",
+    "abstraction",
+    "caching"
+  ],
+  "author": "Mia Kang, Julia Hickey, Michael Chan, Alexander Gurfinkel",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/oslabs-beta/DeSolver/issues"
+  },
+  "homepage": "https://github.com/oslabs-beta/DeSolver#readme",
+  "devDependencies": {
+    "@types/node": "^17.0.31",
+    "graphql": "^16.4.0",
+    "redis": "^4.1.0",
+    "typescript": "^4.6.4",
+    "uuid": "^8.3.2"
+  }
+}
