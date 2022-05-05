@@ -1,8 +1,8 @@
-import { v4 as uuidv4 } from 'uuid';
-import { createClient, RedisClientType, RedisClientOptions } from 'redis';
-import { GraphQLResolveInfo } from 'graphql';
+const { v4 } = require('uuid');
+const { createClient, RedisClientType, RedisClientOptions } = require('redis');
+const { GraphQLResolveInfo } = require('graphql');
 
-export type DesolverFragment = (
+type DesolverFragment = (
   parent: Record<string, unknown>,
   args: Record<string, unknown>,
   context: Record<string, unknown>,
@@ -12,30 +12,30 @@ export type DesolverFragment = (
   ds?: Record<string, unknown>
 ) => unknown | Promise<void | unknown>;
 
-export type ResolverWrapper = (
+type ResolverWrapper = (
   parent: Record<string, unknown>,
   args: Record<string, unknown>,
   context: Record<string, unknown>,
   info: GraphQLResolveInfo
 ) => unknown | Promise<void | unknown>;
 
-export interface ResolvedObject {
+interface ResolvedObject {
   resolved: boolean;
   value: unknown;
 }
 
-export type ResolverType = 'Query' | 'Mutation' | 'Root' | 'All' | string;
+type ResolverType = 'Query' | 'Mutation' | 'Root' | 'All' | string;
 
-export interface DesolverConfig extends RedisClientOptions {
+interface DesolverConfig extends RedisClientOptions {
   cacheDesolver?: boolean;
   applyResolverType?: ResolverType;
 }
 
-export interface Resolvers {
+interface Resolvers {
   [index: string]: { [index: string]: DesolverFragment };
 }
 
-export class Desolver {
+class Desolver {
   private hasNext: number = 0;
   private pipeline: DesolverFragment[] = [];
   private cache: RedisClientType;
@@ -91,7 +91,7 @@ export class Desolver {
   }
 
   public useRoute(...desolvers: DesolverFragment[]): ResolverWrapper {
-    const newId = uuidv4();
+    const newId = v4();
 
     this.idCache[newId] = async (
       parent: Record<string, unknown>,
@@ -249,3 +249,5 @@ async function setCachedValue(
     JSON.stringify(resolvedValue)
   );
 }
+
+module.exports = Desolver;
