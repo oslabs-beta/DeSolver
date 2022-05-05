@@ -31,7 +31,7 @@ export interface DesolverConfig extends RedisClientOptions {
   applyResolverType?: ResolverType;
 }
 
-export interface Resolvers {
+export interface ResolversMap {
   [index: string]: { [index: string]: DesolverFragment };
 }
 
@@ -61,7 +61,7 @@ export class Desolver {
     this.pipeline.push(...desolvers);
   }
 
-  public apply(resolvers: Resolvers): Resolvers {
+  public apply(resolvers: ResolversMap): ResolversMap {
     for (const type in resolvers) {
       if (
         this.config?.applyResolverType &&
