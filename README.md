@@ -24,36 +24,37 @@
  
 # About
  
-DeSolver for [GraphQL](https://graphql.org/): a lightweight, minimalist, unopinionated Node.js GraphQL framework providing a powerful yet approachable API for composing modular and reusable resolver business logic.DeSolver utilizes the middleware pattern as seen in other popular frameworks as a way to create "routing" for your resolvers.
+DeSolver for [GraphQL](https://graphql.org/): a lightweight, minimalist, unopinionated Node.js GraphQL framework providing a powerful yet approachable API for composing modular and reusable resolver business logic. DeSolver utilizes the middleware pattern as seen in other popular frameworks as a way to create "routing" for your resolvers.
  
-The DeSolver instance methods allow a pipeline to be loaded with mini-resolver functions, and a wrapper forms around the resolver map object, permitting a series of functions in a chain or "pre-hook" functions to execute prior to a query or mutation.  This minimizes the need to wrap individual resolver functions manually, thereby reducing templating and additional boilerplate. Composing resolvers in this way can help keep resolver code more maintainable, scalable and testable. It follows the "write once, run everywhere" mantra.
+The DeSolver instance methods allow a pipeline to be loaded with mini-resolver functions, and a wrapper forms around the resolver map object, permitting a series of functions in a chain or "pre-hook" functions to execute prior to a query or mutation. This minimizes the need to wrap individual resolver functions manually, thereby reducing templating and additional boilerplate. Composing resolvers in this way can help keep resolver code more maintainable, scalable and testable. DeSolver follows the "write once, run everywhere" mantra.
  
 <p><br>
  
 <h2 href="#gettingstarted"> </h2>
  
 # Getting Started
- 
-1. Installing Desolver
-- Note: DeSolver is currently in beta, and an npm package is not yet available. This README will be updated when a package is available. Read on for more information on the intended functionality of the framework.
- 
+Note: DeSolver is currently in beta, and an npm package 0.1.2 is available [here](https://www.npmjs.com/package/desolver). Read on for more information on the intended functionality of the framework.
+
+1. Installing DeSolver
+
 - Start by running the npm command:
- 
+
 ```javascript
 npm install desolver
 ```
+
 - The DeSolver framework works best when combined with [GraphQL tools](https://www.graphql-tools.com/docs/generate-schema) Executable Schema package. It is recommended to download that package and use that to generate your type definitions, resolver map and schema.
- 
-- The DeSolver framework also works with the popular Apollo Server API.  DeSolver can be utilized when combined with the resolver map object in Apollo Server.
- 
-- Redis is used for caching resolvers. Check out [Redis](https://redis.io) and [node-redis](https://github.com/redis/node-redis) for installation details. If it is not desired to use Redis, instead using custom caching logic, DeSolver provides a configuration option to disable this default behavior.
- 
+
+- The DeSolver framework is compatible with the popular Apollo Server API. DeSolver can be utilized when combined with the resolver map object in Apollo Server.
+
+- Redis is used for caching resolvers. Check out [Redis](https://redis.io) and [node-redis](https://github.com/redis/node-redis) for installation details. When not using Redis or when using custom caching logic, DeSolver provides a configuration option to disable this default behavior.
+
 <p><br>
  
 <h2 href="#howtouse"></h2>
- 
+
 # How to use
- 
+
 <h3 href="#desolverinstance"></h3>
  
 ### **Desolver Instance and Configuration**
@@ -73,7 +74,7 @@ const desolverConfig = {
 }
 ```
  
-- `cacheDesolver`: Set to true to enable Redis caching, by default if nothing is passed, the default redis instance will be started. Set to false to disable this behavior.
+- `cacheDesolver`: Set to `true` to enable Redis caching, by default if nothing is passed, the default redis instance will be started. Set to `false` to disable this behavior.
  
 - `applyResolverType`: Takes a string value that represents either a root query ( `Query`, `Mutation` ) or some other custom type as defined in your schema.  Specify `Root` to chain both `Query` and `Mutation`. Set to `All` to wrap every resolver. By default, if none is specified, all resolvers will be chained to the middleware pipeline.
  
@@ -89,12 +90,12 @@ DeSolver utilizes Redis caching for greater query optimization. If `cacheDesolve
  
 <h3 href="#desolverfragments"></h3>
  
-### **Desolver Fragments**
+### **DeSolver Fragments**
  
 DeSolver Fragments are used as versions of middleware functions. Each resolver can be decomposed into a series of "fragment" functions. To maintain full functionality of a normal resolver, it provides the current field resolvers first four arguments (root/parent, arguments, context, and info), as well as three additional custom parameters (next, escape, and ds).
  
 ```javascript
-const desolverFragment = (parent, args, context, info, next, escape, ds) => {
+const desolverFragment = (parent, args, context, info, next, escapeHatch, ds) => {
  // write your resolver business logic here
  // parent, args, context and info are available for use here
  // ds context object is also provided by this framework
@@ -130,7 +131,7 @@ The following is an example use case for the desolver middleware pipeline involv
 const desolver = new Desolver()
  
 // Declare authentication Desolver Fragment Function
-const authentication = (parent, args, context, info, next, escape, ds) => {
+const authentication = (parent, args, context, info, next, escapeHatch, ds) => {
  // Define some authentication logic here using args or context
  // throw error if not authenticated
 }
@@ -244,8 +245,9 @@ DeSolver is an open-source community project on Github and accelerated by [OS La
 | Julia Hickey        | https://github.com/hijulia1136   | https://www.linkedin.com/in/juliahickey/        |
  
 <p><br>
-If you are interested in creating an open-source project that builds on top of DeSolver, please don't hesitate to reach out, and we'd be happy to provide feedback and support.
- 
+
+If you are interested in creating an open-source project that builds on top of DeSolver, please don't hesitate to reach out, and we'd be happy to provide feedback and support here or via [DeSolver LinkedIn](https://www.linkedin.com/company/desolver/).
+
 <p><br>
 <h3 href="#license"></h3>
  
