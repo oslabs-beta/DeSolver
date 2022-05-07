@@ -63,6 +63,10 @@ export class Desolver {
 
   public apply(resolvers: ResolversMap): ResolversMap {
     for (const type in resolvers) {
+      if (type === 'Subscription') {
+        continue;
+      }
+      
       if (
         this.config?.applyResolverType &&
         type === this.config.applyResolverType
@@ -190,7 +194,7 @@ export class Desolver {
     };
 
     while (nextIdx <= desolvers.length - 1) {
-      if (resolvedObject.resolved) return resolvedObject.value;
+      const currIdx = nextIdx
 
       if (nextIdx === desolvers.length - 1) {
         return await desolvers[nextIdx](
@@ -213,6 +217,12 @@ export class Desolver {
         escapeHatch,
         ds
       );
+
+      if (resolvedObject.resolved) return resolvedObject.value;
+
+      if(currIdx === nextIdx) {
+        throw new Error('Next was not called')
+      }      
     }
   }
 

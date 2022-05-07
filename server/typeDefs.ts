@@ -2,12 +2,12 @@ import { gql } from 'apollo-server-express'
 
 export const typeDefs = gql`
   type Query {
-    helloWorld: String
+    helloWorld: String!
     hello: String
     getUser: User
     getPopByCountry(country: String!): Int!
-    getAllCountries(arg1: String, arg2: Int): [Country]
-    population(arg1: String, arg2: Int): Population
+    getAllCountries(user: String, password: String): [Country]
+    population(user: String, password: String): Population
   }
   type User {
     id: ID!

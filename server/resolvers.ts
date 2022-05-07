@@ -6,11 +6,18 @@ import { queryAllCountries, helloFirst, helloSecond, helloThird, pokemonParser }
 
 const desolver = new Desolver({
     cacheDesolver: false,
-    applyResolverType: 'All'
-  })
-  
+    applyResolverType: 'Query'
+})
+
+desolver.use((parent, args, context, info, next) => {
+  if (args.user === 'Matt' && args.password === 'bucks') {
+    return next();
+  }
+  throw new Error('nope')
+})
+
 desolver.use(pokemonParser());
-  
+
 export const resolvers: ResolversMap = desolver.apply({
     Query: {
       getUser: () => ({
@@ -18,7 +25,9 @@ export const resolvers: ResolversMap = desolver.apply({
         name: 'Michael'
       }),
   
-      helloWorld: () => 'Hello World!',
+      helloWorld: (parent, args, context, info) => {
+        return 'Hello World!'
+      },
   
       hello: desolver.useRoute(helloFirst, helloSecond, helloThird, (parent, args, context, info): string => 'Hello Final!'),
   
@@ -98,4 +107,4 @@ export const resolvers: ResolversMap = desolver.apply({
         region_id: 1234,
       }))
     }
-  });
+});

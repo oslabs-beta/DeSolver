@@ -24,7 +24,7 @@ export const helloFirst: DesolverFragment = async (parent, args, context, info, 
 
 export const helloSecond: DesolverFragment = async (parent, args, context, info, next, escapeHatch, ds) => {
     console.log('context afterwards', ds.context)
-    console.log('Hello Second!');
+    return escapeHatch('hello second resolved')
     return next<unknown>(null, 2);
   };
 
