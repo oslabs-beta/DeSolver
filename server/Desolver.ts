@@ -11,7 +11,7 @@ import {
 export class Desolver {
   private resolverBuilder: ResolverBuilder;
   private preHooksPipelineStore: Record<ResolverType, DesolverFragment[]> = {};
-  private idCachedPreHooks: Record<string, DesolverFragment[]> = {};
+  private idCachedDesolvers: Record<string, DesolverFragment[]> = {};
 
   constructor(public config?: DesolverConfig) {
     this.resolverBuilder = new ResolverBuilder(config);
@@ -47,7 +47,7 @@ export class Desolver {
     });
 
     // Save these desolvers so that they can be appended later during the apply method
-    this.idCachedPreHooks[newId] = desolvers;
+    this.idCachedDesolvers[newId] = desolvers;
 
     return newResolver;
   }
@@ -80,14 +80,14 @@ export class Desolver {
           ? this.preHooksPipelineStore[type]
           : [];
 
-        // Check the name of the current resolver function in the idCachedPreHooks store
-        // If it exists already, then it means useRoute already wrapped the function
-        // Replace the existing wrapped function with a new invocation of useRoute but append with preHooks and the previously cached desolvers
-        if (this.idCachedPreHooks[resolversMap[type][field].name]) {
+        // Check the name of the current resolver function in the idCachedDesolvers store
+        // If it exists already, then it means this function was already declared using useRoute
+        // Replace the existing wrapped function with a new invocation of useRoute, and re-wrap the function but with preHooks appended to the idCachedDesolvers
+        if (this.idCachedDesolvers[resolversMap[type][field].name]) {
           resolversMap[type][field] = this.useRoute(
             ...allPrehooks,
             ...typePrehooks,
-            ...this.idCachedPreHooks[currentResolver.name]
+            ...this.idCachedDesolvers[currentResolver.name]
           );
           continue;
         }
