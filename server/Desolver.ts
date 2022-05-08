@@ -62,14 +62,19 @@ export class Desolver {
 
       // Iterate over all the fields in the resolver map and build new Resolvers with the prehook functions
       for (const field in resolvers[type]) {
+        // Always load the prehook functions related to 'All' first
         const allPipeline = this.preHooksPipelineStore['All']
           ? this.preHooksPipelineStore['All']
           : [];
 
+        // Then load up the prehook functions related to the specific Resolver Type ('Query' or 'Mutation' or etc.)
         const typePipeline = this.preHooksPipelineStore[type]
           ? this.preHooksPipelineStore[type]
           : [];
 
+        // Check the name of the resolver function in the idCache
+        // If it exists already, then it means useRoute already wrapped the function
+        // Replace the existing wrapped function with a new invocation of useRoute but with preHooks and the previously cached desolvers
         if (this.idCache[resolvers[type][field].name]) {
           resolvers[type][field] = this.useRoute(
             ...allPipeline,
@@ -79,6 +84,8 @@ export class Desolver {
           continue;
         }
 
+        // Otherwise if a name does not exist, it means the resolver is defined as a singular function
+        // Append the preHooks and the singular function
         resolvers[type][field] = this.useRoute(
           ...allPipeline,
           ...typePipeline,

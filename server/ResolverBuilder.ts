@@ -35,7 +35,7 @@ export class ResolverBuilder {
   // Builds the resolver wrapper with the loaded pipeline
   public buildResolverWrapper(): ResolverWrapper {
 
-    // Save the pipeline in the functions closure
+    // Save the pipeline in the ResolverWrapper's closure
     const pipeline = this.desolverPipeline;
 
     // Pipeline can be safely reset after saving reference to the built pipeline
