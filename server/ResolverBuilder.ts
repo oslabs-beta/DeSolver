@@ -79,9 +79,11 @@ export class ResolverBuilder {
         }
 
         let nextIdx = 0;
-
+        
+        // Scope a variable that will keep track if the escapehatch was invoked
         const resolvedObject: ResolvedObject = { resolved: false, value: null };
 
+        // Scope a context object that can be used to pass data between Desolver Fragments
         const ds = {};
 
         const next = <T>(err?: string, resolvedValue?: T): void | T => {
@@ -136,9 +138,12 @@ export class ResolverBuilder {
           );
 
           // This if statement will be true is escapeHatch is called within the desolver fragments
+          // Hence if escapeHatch is invoked, break out of the while loop, then proceed to save to cache if caching enabled
           if (resolvedObject.resolved) break;
 
           // Warn that next must be called
+          // If after execution of the Desolver Fragment middlewares, nextIdx should be greater than currIdx if next is called
+          // If they are equal, then that means next was not called, throw error to warn
           if (currIdx === nextIdx) {
             throw new Error('Next was not called');
           }
@@ -157,6 +162,7 @@ export class ResolverBuilder {
   }
 }
 
+// Helper Functions for getting and setting of the cached values
 async function getCachedValue(
   cache: RedisClientType,
   info: GraphQLResolveInfo
