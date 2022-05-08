@@ -4,7 +4,7 @@ import { DocumentNode } from 'graphql';
 import express from 'express';
 import { typeDefs } from './typeDefs';
 import { resolvers } from './resolvers';
-import { ResolversMap } from './desolver'
+import { ResolversMap } from './Desolver'
 const app = express();
 const PORT = 3000;
 

@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { createClient, RedisClientType, RedisClientOptions } from 'redis';
 import { GraphQLResolveInfo } from 'graphql';
+import { ResolverBuilder } from './ResolverBuilder';
 
 export type DesolverFragment = (
   parent: Record<string, unknown>,
@@ -36,6 +37,7 @@ export interface ResolversMap {
 }
 
 export class Desolver {
+  private resolverBuilder: ResolverBuilder
   private hasNext: number = 0;
   private pipeline: DesolverFragment[] = [];
   private cache: RedisClientType;
