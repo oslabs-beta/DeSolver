@@ -76,8 +76,6 @@ const desolverConfig = {
  
 - `cacheDesolver`: Set to `true` to enable Redis caching, by default if nothing is passed, the default redis instance will be started. Set to `false` to disable this behavior.
  
-- `applyResolverType`: Takes a string value that represents either a root query ( `Query`, `Mutation` ) or some other custom type as defined in your schema.  Specify `Root` to chain both `Query` and `Mutation`. Set to `All` to wrap every resolver. By default, if none is specified, all resolvers will be chained to the middleware pipeline.
- 
 The desolverConfig object can also be defined with configuration options from Redis. See [node-redis](https://github.com/redis/node-redis) for a list of additional custom configuration options that can be defined from Redis.
 <br><br>
  
@@ -123,7 +121,13 @@ The final three parameters are additional parameters provided by the DeSolver fr
  
 ### **Creating the middleware pipeline**
  
-Utilize the `desolver.use()` method on the desolver instance to generate your pipeline of prehook functions. Any number of function arguments passed to `desolver.use()` will be pushed to the function pipeline. Multiple successive invocations of `desolver.use()` will also add additional functions to the pipeline.
+Utilize the `desolver.use()` method on the desolver instance to generate your pipeline of prehook functions.
+
+The `desolver.use()` method has the following parameters:
+- `ResolverType`: A string which matches the Resolver Type in your Resolver Map object. Pass the string `'All'` if you want to chain the prehook functions to all your resolvers.
+- `DeSolverFragments`: Add any number of functions in the form of DeSolver Fragments to chain to the target Resolver Type. 
+
+Multiple successive invocations of `desolver.use()` will also add additional functions to the pipeline.
  
 The following is an example use case for the desolver middleware pipeline involving guarding root queries with authentication logic:
  
@@ -136,9 +140,9 @@ const authentication = (parent, args, context, info, next, escapeHatch, ds) => {
  // throw error if not authenticated
 }
  
-// Add to the authentication function to pipeline with desolver.use()
-// This function will execute prior to all resolvers
-desolver.use(authentication)
+// Add the authentication function to pipeline with desolver.use()
+// This function will execute prior to all Query resolvers
+desolver.use('Query', authentication)
  
 // Invoke desolver.apply() method with the resolver map object passed
 const resolvers = desolver.apply({
@@ -170,7 +174,7 @@ See the example below:
 // desolver.use(), desolver.apply() and desolver.useRoute() can
 // be used together to create longer chains
  
-desolver.use(authentication)
+desolver.use('Query', authentication)
  
 const resolvers = desolver.apply({
  Query: {
@@ -195,23 +199,22 @@ const resolvers = desolver.apply({
  
 ### **Targeting a specific resolver or type**
  
-To chain resolvers to a specific root type or field resolvers, specify the root query or field to chain the middleware pipeline into the configuration object passed to the DeSolver constructor.
+To chain Desolver Fragments to a specific root type or field resolvers, multiple invocations of `desolver.use()` can be called with different Resolver Type targets.
  
 See the example below:
  
 ```javascript
 // Specify when instantiating Desolver which resolvers to chain to in the
 // configuration object
-const desolver = new Desolver({
- applyResolverType: 'Query'
-})
+const desolver = new Desolver()
  
-desolver.use(authentication)
+desolver.use('Query', authentication)
+
+desolver.use('Mutation', authentication, authorization)
  
 const resolvers = desolver.apply({
  Query: {
-   // Only these root query resolvers will be guarded by the authentication
-   // function
+   // Query resolvers are guarded only by authentication function
    getUserById: desolver.useRoute(desolverFragment1, desolverFragment2),
  
    getPostsById: (parent, { id }, context, info) => {
@@ -221,9 +224,7 @@ const resolvers = desolver.apply({
  
  Mutation: {
    createUser: (parent, root, args, context, info) => {
-     // This mutation is not guarded by the authentication logic
-     // set applyResolverType to 'Root' to wrap chain to both
-     // 'Query' and 'Mutation'
+     // This mutation is now guarded by both authentication and authorization functions
    }
  }
 })

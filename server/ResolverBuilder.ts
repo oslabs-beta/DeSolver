@@ -26,10 +26,9 @@ export class ResolverBuilder {
   }
 
   // Method to load DesolverFragments into the pipeline
+  // Return 'this' so that multiple load methods and buildResolverWrapper method can be chained
   public load(...desolvers: DesolverFragment[]): this {
     this.desolverPipeline.push(...desolvers);
-
-    // return 'this' so that multiple load methods and buildResolverWrapper method can be chained
     return this;
   }
 
