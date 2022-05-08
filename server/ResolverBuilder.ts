@@ -38,12 +38,15 @@ export class ResolverBuilder {
 
   public buildResolverWrapper(): ResolverWrapper {
     const pipeline = this.desolverPipeline;
+
+    this.reset();
+
     return async (parent, args, context, info) => {
       try {
         if (this.config.cacheDesolver === true) {
           const cachedValue = await getCachedValue(this.cache, info);
           if (cachedValue) {
-            // Cache Hit!
+            console.log('Cache Hit!');
             return JSON.parse(cachedValue);
           }
         }
@@ -86,7 +89,7 @@ export class ResolverBuilder {
           const currIdx = nextIdx;
 
           if (nextIdx === pipeline.length - 1) {
-            return await pipeline[nextIdx](
+            resolvedObject.value = await pipeline[nextIdx](
               parent,
               args,
               context,
@@ -95,6 +98,8 @@ export class ResolverBuilder {
               escapeHatch,
               ds
             );
+            resolvedObject.resolved = true;
+            break;
           }
 
           await pipeline[nextIdx](
@@ -107,7 +112,7 @@ export class ResolverBuilder {
             ds
           );
 
-          if (resolvedObject.resolved) return resolvedObject.value;
+          if (resolvedObject.resolved) break;
 
           if (currIdx === nextIdx) {
             throw new Error('Next was not called');
@@ -115,7 +120,7 @@ export class ResolverBuilder {
         }
 
         if (this.config.cacheDesolver === true) {
-          // Setting Cached Value
+          console.log('Setting Cached Value');
           await setCachedValue(this.cache, info, resolvedObject.value);
         }
 

@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { createClient, RedisClientType, RedisClientOptions } from 'redis';
+import { RedisClientOptions } from 'redis';
 import { GraphQLResolveInfo } from 'graphql';
 import { ResolverBuilder } from './ResolverBuilder';
 
@@ -37,30 +37,19 @@ export interface ResolversMap {
 }
 
 export class Desolver {
-  private resolverBuilder: ResolverBuilder
-  private hasNext: number = 0;
-  private pipeline: DesolverFragment[] = [];
-  private cache: RedisClientType;
-  private idCache: Record<string, ResolverWrapper> = {};
+  private resolverBuilder: ResolverBuilder;
+  private preHooksPipelineStore: Record<ResolverType, DesolverFragment[]> = {};
+  private idCache: Record<string, DesolverFragment[]> = {};
 
   constructor(public config?: DesolverConfig) {
-    if (this.config?.cacheDesolver === true) {
-      // Redis cache starting with custom config
-      this.cache = createClient(this.config);
-      this.cache.connect();
-      this.cache.on('error', (err) => console.log('Redis Client Error', err));
-    } else if (this.config?.cacheDesolver === false) {
-      // Do nothing, cache not started
-    } else {
-      // No Desolver Configuration specified, starting default Redis Client
-      this.cache = createClient();
-      this.cache.connect();
-      this.cache.on('error', (err) => console.log('Redis Client Error', err));
-    }
+    this.resolverBuilder = new ResolverBuilder(config);
   }
 
-  public use(...desolvers: DesolverFragment[]): void {
-    this.pipeline.push(...desolvers);
+  public use(typeName: ResolverType, ...desolvers: DesolverFragment[]): void {
+    if (!this.preHooksPipelineStore[typeName]) {
+      this.preHooksPipelineStore[typeName] = [];
+    }
+    this.preHooksPipelineStore[typeName].push(...desolvers);
   }
 
   public apply(resolvers: ResolversMap): ResolversMap {
@@ -68,29 +57,30 @@ export class Desolver {
       if (type === 'Subscription') {
         continue;
       }
-      
-      if (
-        this.config?.applyResolverType &&
-        type === this.config.applyResolverType
-      ) {
-        for (const field in resolvers[type]) {
-          // Skips wrapping the field if the function id is stored in the cache already
-          if (this.idCache[resolvers[type][field].name]) {
-            continue;
-          }
-          resolvers[type][field] = this.useRoute(resolvers[type][field]);
+
+      for (const field in resolvers[type]) {
+        const allPipeline = this.preHooksPipelineStore['All']
+          ? this.preHooksPipelineStore['All']
+          : [];
+
+        const typePipeline = this.preHooksPipelineStore[type]
+          ? this.preHooksPipelineStore[type]
+          : [];
+
+        if (this.idCache[resolvers[type][field].name]) {
+          resolvers[type][field] = this.useRoute(
+            ...allPipeline,
+            ...typePipeline,
+            ...this.idCache[resolvers[type][field].name]
+          );
+          continue;
         }
-      } else if (
-        !this.config?.applyResolverType ||
-        this.config.applyResolverType === 'All'
-      ) {
-        for (const field in resolvers[type]) {
-          // Skips wrapping the field if the function id is stored in the cache already
-          if (this.idCache[resolvers[type][field].name]) {
-            continue;
-          }
-          resolvers[type][field] = this.useRoute(resolvers[type][field]);
-        }
+
+        resolvers[type][field] = this.useRoute(
+          ...allPipeline,
+          ...typePipeline,
+          resolvers[type][field]
+        );
       }
     }
     return resolvers;
@@ -99,133 +89,18 @@ export class Desolver {
   public useRoute(...desolvers: DesolverFragment[]): ResolverWrapper {
     const newId = uuidv4();
 
-    this.idCache[newId] = async (
-      parent: Record<string, unknown>,
-      args: Record<string, unknown>,
-      context: Record<string, unknown>,
-      info: GraphQLResolveInfo
-    ) => {
-      return await this.composePipeline(
-        parent,
-        args,
-        context,
-        info,
-        ...desolvers
-      );
-    };
+    const newResolver = this.resolverBuilder
+      .load(...desolvers)
+      .buildResolverWrapper();
 
-    Object.defineProperty(this.idCache[newId], 'name', {
+    Object.defineProperty(newResolver, 'name', {
       value: newId,
       writable: false,
     });
 
-    return this.idCache[newId];
-  }
+    this.idCache[newId] = desolvers;
 
-  private async composePipeline(
-    parent: Record<string, unknown>,
-    args: Record<string, unknown>,
-    context: Record<string, unknown>,
-    info: GraphQLResolveInfo,
-    ...desolvers: DesolverFragment[]
-  ): Promise<unknown> {
-    if (this.config.cacheDesolver === true) {
-      const cachedValue = await getCachedValue(this.cache, info);
-      if (cachedValue) {
-        // Cache Hit!
-        return JSON.parse(cachedValue);
-      }
-    }
-
-    const resolvedValue = await this.execute(
-      parent,
-      args,
-      context,
-      info,
-      ...this.pipeline,
-      ...desolvers
-    );
-
-    if (this.config.cacheDesolver === true) {
-      // Setting Cached Value
-      await setCachedValue(this.cache, info, resolvedValue);
-    }
-
-    return resolvedValue;
-  }
-
-  private async execute(
-    parent: Record<string, unknown>,
-    args: Record<string, unknown>,
-    context: Record<string, unknown>,
-    info: GraphQLResolveInfo,
-    ...desolvers: DesolverFragment[]
-  ): Promise<void | unknown> {
-    let nextIdx = 0;
-
-    for (const desolverFragment of desolvers) {
-      if (typeof desolverFragment !== 'function') {
-        throw new Error('Desolver Fragment must be a function.');
-      }
-    }
-
-    const resolvedObject: ResolvedObject = { resolved: false, value: null };
-
-    const ds = {};
-
-    const next = <T>(err?: string, resolvedValue?: T): void | T => {
-      try {
-        if (err) throw new Error(err);
-        if (resolvedValue) {
-          resolvedObject.resolved = true;
-          return (resolvedObject.value = resolvedValue);
-        }
-        nextIdx += 1;
-      } catch (e) {
-        throw new Error(err);
-      }
-    };
-
-    const escapeHatch = <T>(resolvedValue: T): void | T => {
-      try {
-        resolvedObject.resolved = true;
-        return (resolvedObject.value = resolvedValue);
-      } catch (e) {
-        throw new Error(e.message);
-      }
-    };
-
-    while (nextIdx <= desolvers.length - 1) {
-      const currIdx = nextIdx
-
-      if (nextIdx === desolvers.length - 1) {
-        return await desolvers[nextIdx](
-          parent,
-          args,
-          context,
-          info,
-          next,
-          escapeHatch,
-          ds
-        );
-      }
-
-      await desolvers[nextIdx](
-        parent,
-        args,
-        context,
-        info,
-        next,
-        escapeHatch,
-        ds
-      );
-
-      if (resolvedObject.resolved) return resolvedObject.value;
-
-      if(currIdx === nextIdx) {
-        throw new Error('Next was not called')
-      }      
-    }
+    return newResolver;
   }
 
   private errorLogger(error: any): void {
@@ -234,30 +109,7 @@ export class Desolver {
       'Error Name': error.name,
       'Error Message': error.message,
     };
-    throw new Error(
-      `failed to resolve ${this.pipeline[this.hasNext]}: ${errorObj}`
-    );
+
+    throw new Error(`failed to resolve: ${errorObj}`);
   }
-}
-
-async function getCachedValue(
-  cache: RedisClientType,
-  info: GraphQLResolveInfo
-): Promise<void | string> {
-  // Add AST parse logic here to create a unique key and pass into the cache to fetch
-  const cachedValue = await cache.hGet('Query', JSON.stringify(info.path));
-  if (cachedValue !== null) return cachedValue;
-}
-
-async function setCachedValue(
-  cache: RedisClientType,
-  info: GraphQLResolveInfo,
-  resolvedValue: unknown
-): Promise<void> {
-  // Add AST parse logic here to create a unique key and pass into the cache to be set
-  await cache.hSet(
-    'Query',
-    JSON.stringify(info.path),
-    JSON.stringify(resolvedValue)
-  );
 }

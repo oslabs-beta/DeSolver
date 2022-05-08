@@ -19,7 +19,7 @@ export const queryAllCountries: DesolverFragment = async (_, __, context, info, 
 export const helloFirst: DesolverFragment = async (parent, args, context, info, next, escapeHatch, ds) => {
     ds.context = 'hello'
     // return escapeHatch('I am resolved first!');
-    return next();
+    return next(null, 'hello');
   };
 
 export const helloSecond: DesolverFragment = async (parent, args, context, info, next, escapeHatch, ds) => {
