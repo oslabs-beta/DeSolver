@@ -27,20 +27,29 @@ export class ResolverBuilder {
     }
   }
 
+  // Call this method after building a Resolver Wrapper to reset the pipeline store
   public reset(): void {
     this.desolverPipeline = [];
   }
 
+  // Method to load DesolverFragments into the pipeline
   public load(...desolvers: DesolverFragment[]): this {
     this.desolverPipeline.push(...desolvers);
+
+    // return 'this' so that multiple load methods and buildResolverWrapper can be chained
     return this;
   }
 
+  // Builds the resolver wrapper with the loaded pipeline
   public buildResolverWrapper(): ResolverWrapper {
+
+    // Save the pipeline in the functions closure
     const pipeline = this.desolverPipeline;
 
+    // Pipeline can be safely reset after saving reference to the built pipeline
     this.reset();
 
+    // Return a function that wraps around the execution of the desolver pipeline
     return async (parent, args, context, info) => {
       try {
         if (this.config.cacheDesolver === true) {
@@ -52,12 +61,6 @@ export class ResolverBuilder {
         }
 
         let nextIdx = 0;
-
-        for (const desolverFragment of pipeline) {
-          if (typeof desolverFragment !== 'function') {
-            throw new Error('Desolver Fragment must be a function.');
-          }
-        }
 
         const resolvedObject: ResolvedObject = { resolved: false, value: null };
 
@@ -86,9 +89,11 @@ export class ResolverBuilder {
         };
 
         while (nextIdx <= pipeline.length - 1) {
+          // keep track of the current index so that calling next can be tracked
           const currIdx = nextIdx;
 
           if (nextIdx === pipeline.length - 1) {
+            // Always resolve the returned value of the final function in the pipeline
             resolvedObject.value = await pipeline[nextIdx](
               parent,
               args,
@@ -112,15 +117,17 @@ export class ResolverBuilder {
             ds
           );
 
+          // This if statement will be true is escapeHatch is called within the desolver fragments
           if (resolvedObject.resolved) break;
 
+          // Warn that next must be called
           if (currIdx === nextIdx) {
             throw new Error('Next was not called');
           }
         }
 
         if (this.config.cacheDesolver === true) {
-          console.log('Setting Cached Value');
+          // Sets the resolved value to the cache
           await setCachedValue(this.cache, info, resolvedObject.value);
         }
 

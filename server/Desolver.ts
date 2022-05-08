@@ -45,6 +45,7 @@ export class Desolver {
     this.resolverBuilder = new ResolverBuilder(config);
   }
 
+  // Specify a resolver type as a string, and then define the middleware Desolver Fragments
   public use(typeName: ResolverType, ...desolvers: DesolverFragment[]): void {
     if (!this.preHooksPipelineStore[typeName]) {
       this.preHooksPipelineStore[typeName] = [];
@@ -54,10 +55,12 @@ export class Desolver {
 
   public apply(resolvers: ResolversMap): ResolversMap {
     for (const type in resolvers) {
+      // Currently appending functionality to subscriptions isn't supported in Desolver
       if (type === 'Subscription') {
         continue;
       }
 
+      // Iterate over all the fields in the resolver map and build new Resolvers with the prehook functions
       for (const field in resolvers[type]) {
         const allPipeline = this.preHooksPipelineStore['All']
           ? this.preHooksPipelineStore['All']
@@ -87,22 +90,33 @@ export class Desolver {
   }
 
   public useRoute(...desolvers: DesolverFragment[]): ResolverWrapper {
+    // Error handling in case some other value other than a function is loaded into useRoute
+    for (const desolverFragment of desolvers) {
+      if (typeof desolverFragment !== 'function') {
+        throw new Error('Desolver Fragment must be a function.');
+      }
+    }
+
     const newId = uuidv4();
 
+    // Builds the pipeline with the all the desolvers that have been wrapped into useRoute
     const newResolver = this.resolverBuilder
       .load(...desolvers)
       .buildResolverWrapper();
 
+    // Rename the function with the uuid, allows for checking if the useRoute has been called when using the apply method
     Object.defineProperty(newResolver, 'name', {
       value: newId,
       writable: false,
     });
 
+    // Save these desolvers so that they can be appended later during the apply method
     this.idCache[newId] = desolvers;
 
     return newResolver;
   }
 
+  // TO DO: Hook up the error handler
   private errorLogger(error: any): void {
     let errorObj = {
       Error: error.toString(),
