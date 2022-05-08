@@ -11,7 +11,7 @@ import {
 export class Desolver {
   private resolverBuilder: ResolverBuilder;
   private preHooksPipelineStore: Record<ResolverType, DesolverFragment[]> = {};
-  private idCache: Record<string, DesolverFragment[]> = {};
+  private idCachedPreHooks: Record<string, DesolverFragment[]> = {};
 
   constructor(public config?: DesolverConfig) {
     this.resolverBuilder = new ResolverBuilder(config);
@@ -25,6 +25,10 @@ export class Desolver {
     this.preHooksPipelineStore[typeName].push(...desolvers);
   }
 
+  // ResolversMap object has a tree like structure
+  // Each property in the Resolvers Map is a string mapped to the types in the GraphQL schema
+  // Each value of each property is yet another object with key : value pairs of the resolver name and resolver function definition
+  // Iterate over all properties of the resolver map and transform the resolver map object by building new resolver functions with prehook functions
   public apply(resolvers: ResolversMap): ResolversMap {
     for (const type in resolvers) {
       // Currently appending functionality to subscriptions isn't supported in Desolver
@@ -34,24 +38,26 @@ export class Desolver {
 
       // Iterate over all the fields in the resolver map and build new Resolvers with the prehook functions
       for (const field in resolvers[type]) {
+        const currentResolver = resolvers[type][field];
+        
         // Always load the prehook functions related to 'All' first
-        const allPipeline = this.preHooksPipelineStore['All']
+        const allPrehooks = this.preHooksPipelineStore['All']
           ? this.preHooksPipelineStore['All']
           : [];
 
         // Then load up the prehook functions related to the specific Resolver Type ('Query' or 'Mutation' or etc.)
-        const typePipeline = this.preHooksPipelineStore[type]
+        const typePrehooks = this.preHooksPipelineStore[type]
           ? this.preHooksPipelineStore[type]
           : [];
 
-        // Check the name of the resolver function in the idCache
+        // Check the name of the current resolver function in the idCachedPreHooks store
         // If it exists already, then it means useRoute already wrapped the function
-        // Replace the existing wrapped function with a new invocation of useRoute but with preHooks and the previously cached desolvers
-        if (this.idCache[resolvers[type][field].name]) {
+        // Replace the existing wrapped function with a new invocation of useRoute but append with preHooks and the previously cached desolvers
+        if (this.idCachedPreHooks[resolvers[type][field].name]) {
           resolvers[type][field] = this.useRoute(
-            ...allPipeline,
-            ...typePipeline,
-            ...this.idCache[resolvers[type][field].name]
+            ...allPrehooks,
+            ...typePrehooks,
+            ...this.idCachedPreHooks[currentResolver.name]
           );
           continue;
         }
@@ -59,9 +65,9 @@ export class Desolver {
         // Otherwise if a name does not exist, it means the resolver is defined as a singular function
         // Append the preHooks and the singular function
         resolvers[type][field] = this.useRoute(
-          ...allPipeline,
-          ...typePipeline,
-          resolvers[type][field]
+          ...allPrehooks,
+          ...typePrehooks,
+          currentResolver,
         );
       }
     }
@@ -90,7 +96,7 @@ export class Desolver {
     });
 
     // Save these desolvers so that they can be appended later during the apply method
-    this.idCache[newId] = desolvers;
+    this.idCachedPreHooks[newId] = desolvers;
 
     return newResolver;
   }
