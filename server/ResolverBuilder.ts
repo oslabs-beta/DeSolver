@@ -1,11 +1,38 @@
-import {
-  DesolverConfig,
-  ResolverWrapper,
-  ResolvedObject,
-  DesolverFragment,
-} from './Desolver';
 import { GraphQLResolveInfo } from 'graphql';
-import { createClient, RedisClientType } from 'redis';
+import { createClient, RedisClientType, RedisClientOptions } from 'redis';
+
+export interface ResolvedObject {
+  resolved: boolean;
+  value: unknown;
+}
+
+export type ResolverWrapper = (
+  parent: Record<string, unknown>,
+  args: Record<string, unknown>,
+  context: Record<string, unknown>,
+  info: GraphQLResolveInfo
+) => unknown | Promise<void | unknown>;
+
+export type DesolverFragment = (
+  parent: Record<string, unknown>,
+  args: Record<string, unknown>,
+  context: Record<string, unknown>,
+  info: GraphQLResolveInfo,
+  next?: <T>(err?: string, resolvedObject?: T) => void,
+  escapeHatch?: <T>(resolvedObject: T) => T | void,
+  ds?: Record<string, unknown>
+) => unknown | Promise<void | unknown>;
+
+export type ResolverType = 'Query' | 'Mutation' | 'Root' | 'All' | string;
+
+export interface DesolverConfig extends RedisClientOptions {
+  cacheDesolver?: boolean;
+  applyResolverType?: ResolverType;
+}
+
+export interface ResolversMap {
+  [index: string]: { [index: string]: DesolverFragment };
+}
 
 export class ResolverBuilder {
   private cache: RedisClientType;
@@ -34,7 +61,6 @@ export class ResolverBuilder {
 
   // Builds the resolver wrapper with the loaded pipeline
   public buildResolverWrapper(): ResolverWrapper {
-
     // Save the pipeline in the ResolverWrapper's closure
     const pipeline = this.desolverPipeline;
 

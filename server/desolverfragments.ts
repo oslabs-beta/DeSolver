@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
-import { DesolverFragment } from "./Desolver";
+import { DesolverFragment } from "./ResolverBuilder";
 import { QueryArrayResult } from "pg";
 import db from '../models/elephantConnect'
 

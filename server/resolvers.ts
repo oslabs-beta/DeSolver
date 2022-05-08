@@ -1,7 +1,8 @@
 import { QueryArrayResult } from 'pg'
 import db from '../models/elephantConnect'
 import axios, { AxiosResponse } from 'axios';
-import { Desolver, ResolversMap } from './Desolver'
+import { ResolversMap } from './ResolverBuilder';
+import { Desolver } from './index'
 import { queryAllCountries, helloFirst, helloSecond, helloThird, pokemonParser } from './desolverfragments';
 
 const desolver = new Desolver({

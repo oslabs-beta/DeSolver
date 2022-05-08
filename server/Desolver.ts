@@ -1,40 +1,12 @@
 import { v4 as uuidv4 } from 'uuid';
-import { RedisClientOptions } from 'redis';
-import { GraphQLResolveInfo } from 'graphql';
-import { ResolverBuilder } from './ResolverBuilder';
-
-export type DesolverFragment = (
-  parent: Record<string, unknown>,
-  args: Record<string, unknown>,
-  context: Record<string, unknown>,
-  info: GraphQLResolveInfo,
-  next?: <T>(err?: string, resolvedObject?: T) => void,
-  escapeHatch?: <T>(resolvedObject: T) => T | void,
-  ds?: Record<string, unknown>
-) => unknown | Promise<void | unknown>;
-
-export type ResolverWrapper = (
-  parent: Record<string, unknown>,
-  args: Record<string, unknown>,
-  context: Record<string, unknown>,
-  info: GraphQLResolveInfo
-) => unknown | Promise<void | unknown>;
-
-export interface ResolvedObject {
-  resolved: boolean;
-  value: unknown;
-}
-
-export type ResolverType = 'Query' | 'Mutation' | 'Root' | 'All' | string;
-
-export interface DesolverConfig extends RedisClientOptions {
-  cacheDesolver?: boolean;
-  applyResolverType?: ResolverType;
-}
-
-export interface ResolversMap {
-  [index: string]: { [index: string]: DesolverFragment };
-}
+import {
+  ResolverBuilder,
+  DesolverConfig,
+  DesolverFragment,
+  ResolverWrapper,
+  ResolverType,
+  ResolversMap,
+} from './ResolverBuilder';
 
 export class Desolver {
   private resolverBuilder: ResolverBuilder;
