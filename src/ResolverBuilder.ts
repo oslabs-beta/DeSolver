@@ -73,7 +73,7 @@ export class ResolverBuilder {
         if (this.config.cacheDesolver === true) {
           const cachedValue = await getCachedValue(this.cache, info);
           if (cachedValue) {
-            console.log('Cache Hit!');
+            // Cache hit
             return JSON.parse(cachedValue);
           }
         }
