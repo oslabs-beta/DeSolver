@@ -205,7 +205,19 @@ See the example below:
  
 ```javascript
 const desolver = new Desolver()
- 
+
+// Declare authentication Desolver Fragment Function
+const authentication = (parent, args, context, info, next, escapeHatch, ds) => {
+ // Define some authentication logic here using args or context
+ // throw error if not authenticated
+}
+
+// Declare authorization Desolver Fragment Function
+const authentication = (parent, args, context, info, next, escapeHatch, ds) => {
+ // Define some authorization logic here using args or context
+ // throw error if not authorized
+}
+
 desolver.use('Query', authentication)
 
 desolver.use('Mutation', authentication, authorization)
