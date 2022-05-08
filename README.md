@@ -197,7 +197,7 @@ const resolvers = desolver.apply({
  
 <h3 href="#targetatype"></h3>
  
-### **Targeting a specific resolver or type**
+### **Targeting a specific resolver type**
  
 To chain Desolver Fragments to a specific root type or field resolvers, multiple invocations of `desolver.use()` can be called with different Resolver Type targets.
  
@@ -213,7 +213,7 @@ const authentication = (parent, args, context, info, next, escapeHatch, ds) => {
 }
 
 // Declare authorization Desolver Fragment Function
-const authentication = (parent, args, context, info, next, escapeHatch, ds) => {
+const authorization = (parent, args, context, info, next, escapeHatch, ds) => {
  // Define some authorization logic here using args or context
  // throw error if not authorized
 }
