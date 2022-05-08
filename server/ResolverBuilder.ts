@@ -1,4 +1,3 @@
-import { createClient, RedisClientType } from 'redis';
 import {
   DesolverConfig,
   ResolverWrapper,
@@ -6,6 +5,7 @@ import {
   DesolverFragment,
 } from './Desolver';
 import { GraphQLResolveInfo } from 'graphql';
+import { createClient, RedisClientType } from 'redis';
 
 export class ResolverBuilder {
   private cache: RedisClientType;
