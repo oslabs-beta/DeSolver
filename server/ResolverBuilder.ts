@@ -17,13 +17,6 @@ export class ResolverBuilder {
       this.cache = createClient(this.config);
       this.cache.connect();
       this.cache.on('error', (err) => console.log('Redis Client Error', err));
-    } else if (this.config?.cacheDesolver === false) {
-      // Do nothing, cache not started
-    } else {
-      // No Desolver Configuration specified, starting default Redis Client
-      this.cache = createClient();
-      this.cache.connect();
-      this.cache.on('error', (err) => console.log('Redis Client Error', err));
     }
   }
 
@@ -36,7 +29,7 @@ export class ResolverBuilder {
   public load(...desolvers: DesolverFragment[]): this {
     this.desolverPipeline.push(...desolvers);
 
-    // return 'this' so that multiple load methods and buildResolverWrapper can be chained
+    // return 'this' so that multiple load methods and buildResolverWrapper method can be chained
     return this;
   }
 
