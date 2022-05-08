@@ -109,7 +109,7 @@ The DeSolver Parameters are as follows:
 The first four parameters are the normal parameters for any resolver:
 - `parent`: Sometimes referred to as the root object. The same parent/root object which is the result of the previous parent/type.
 - `arguments`: Arguments provided to the root or field resolver.
-- `context`: a mutable object that is provided to all resolvers.
+- `context`: an object that is provided to all resolvers.
 - `info`: field specific information relevant to the query.
  
 The final three parameters are additional parameters provided by the DeSolver framework:
@@ -204,8 +204,6 @@ To chain Desolver Fragments to a specific root type or field resolvers, multiple
 See the example below:
  
 ```javascript
-// Specify when instantiating Desolver which resolvers to chain to in the
-// configuration object
 const desolver = new Desolver()
  
 desolver.use('Query', authentication)
@@ -224,7 +222,7 @@ const resolvers = desolver.apply({
  
  Mutation: {
    createUser: (parent, root, args, context, info) => {
-     // This mutation is now guarded by both authentication and authorization functions
+     // This mutation resolver is now guarded by both authentication and authorization functions
    }
  }
 })
