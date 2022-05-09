@@ -6,6 +6,7 @@ export interface ResolvedObject {
   value: unknown;
 }
 
+// Type annotation for individual resolvers.  
 export type ResolverWrapper = (
   parent: Record<string, unknown>,
   args: Record<string, unknown>,
@@ -13,6 +14,8 @@ export type ResolverWrapper = (
   info: GraphQLResolveInfo
 ) => unknown | Promise<void | unknown>;
 
+// This is the type for the DeSolver middleware function passed into useRoute() and use().
+// DeSolverFragment mimics the structure of an individual resolver object. 
 export type DesolverFragment = (
   parent: Record<string, unknown>,
   args: Record<string, unknown>,
