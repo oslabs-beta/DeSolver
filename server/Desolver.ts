@@ -52,13 +52,10 @@ export class Desolver {
     return newResolver;
   }
 
-  // ResolversMap object has a tree like structure
-  // Each property in the Resolvers Map is a string mapped to the types in the GraphQL schema
-  // Each value of each property is yet another object with key : value pairs of the resolver name and resolver function definition
   // Iterate over all properties of the resolver map and transform the resolver map object by building new resolver functions with prehook functions
   public apply(resolversMap: ResolversMap): ResolversMap {
     for (const type in resolversMap) {
-      // Currently appending functionality to subscriptions isn't supported in Desolver
+      // Currently appending functionality to subscriptions isn't supported in Desolver, skip any types not found in the store
       if (type === 'Subscription') {
         continue;
       }
@@ -67,21 +64,17 @@ export class Desolver {
       for (const field in resolversMap[type]) {
         const currentResolver = resolversMap[type][field];
 
-        // Always load the prehook functions related to 'All' first
         // Checks to see if any 'All' preHooks were loaded, returns empty array if none exists
         const allPrehooks = this.preHooksPipelineStore['All']
           ? this.preHooksPipelineStore['All']
           : [];
 
-        // Then load up the prehook functions related to the specific Resolver Type ('Query' or 'Mutation' or etc.)
-        // Checks the current type of Resolver ('Query', 'Mutation', etc) has been loaded from desolver.use()
-        // Returns empty array if none exist
+        // Checks the current type of Resolver ('Query', 'Mutation', etc) has been loaded from desolver.use(), returns empty array if not
         const typePrehooks = this.preHooksPipelineStore[type]
           ? this.preHooksPipelineStore[type]
           : [];
 
-        // Check the name of the current resolver function in the idCachedDesolvers store
-        // If it exists already, then it means this function was already declared using useRoute
+        // Check name of the current resolver function in the idCachedDesolvers store, if it exists
         // Replace the existing wrapped function with a new invocation of useRoute, and re-wrap the function but with preHooks appended to the idCachedDesolvers
         if (this.idCachedDesolvers[resolversMap[type][field].name]) {
           resolversMap[type][field] = this.useRoute(

@@ -6,20 +6,10 @@ import { Desolver } from './index'
 import { queryAllCountries, helloFirst, helloSecond, helloThird, pokemonParser } from './desolverfragments';
 
 const desolver = new Desolver({
-    cacheDesolver: true,
+    cacheDesolver: false,
 })
 
-desolver.use('All', pokemonParser(), async (parent, args, context, info, next) => {
-  console.log('yolo')
-  return next()
-});
-
-desolver.use('Query', (parent, args, context, info, next) => {
-  if (args.user === 'Matt' && args.password === 'bucks') {
-    return next();
-  }
-  throw new Error('nope')
-})
+desolver.use('All', pokemonParser())
 
 export const resolvers: ResolversMap = desolver.apply({
     Query: {
