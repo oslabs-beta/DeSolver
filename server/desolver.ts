@@ -2,6 +2,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { createClient, RedisClientType, RedisClientOptions } from 'redis';
 import { GraphQLResolveInfo } from 'graphql';
 
+// This is the type for the DeSolver middleware function passed into useRoute() and use().
+// DeSolverFragment mimics the structure of an individual resolver object. 
 export type DesolverFragment = (
   parent: Record<string, unknown>,
   args: Record<string, unknown>,
@@ -12,6 +14,7 @@ export type DesolverFragment = (
   ds?: Record<string, unknown>
 ) => unknown | Promise<void | unknown>;
 
+// Type annotation for individual resolvers.  
 export type ResolverWrapper = (
   parent: Record<string, unknown>,
   args: Record<string, unknown>,
@@ -37,7 +40,7 @@ export interface Resolvers {
 
 export class Desolver {
   private hasNext: number = 0;
-  private pipeline: DesolverFragment[] = [];
+  private preHookPipeline: DesolverFragment[] = [];
   private cache: RedisClientType;
   private idCache: Record<string, ResolverWrapper> = {};
 
@@ -57,8 +60,8 @@ export class Desolver {
     }
   }
 
-  public use(...desolvers: DesolverFragment[]): void {
-    this.pipeline.push(...desolvers);
+  public use(...preHookDesolvers: DesolverFragment[]): void {
+    this.preHookPipeline.push(...preHookDesolvers);
   }
 
   public apply(resolvers: Resolvers): Resolvers {
@@ -99,6 +102,7 @@ export class Desolver {
       context: Record<string, unknown>,
       info: GraphQLResolveInfo
     ) => {
+      // Returns the execution of all DesolverFragments loaded into the pipeline. 
       return await this.composePipeline(
         parent,
         args,
@@ -123,6 +127,7 @@ export class Desolver {
     info: GraphQLResolveInfo,
     ...desolvers: DesolverFragment[]
   ): Promise<unknown> {
+    // If caching is enabled, the cache is checked prior to the invocation of the DesolverFragments.
     if (this.config.cacheDesolver === true) {
       const cachedValue = await getCachedValue(this.cache, info);
       if (cachedValue) {
@@ -131,12 +136,13 @@ export class Desolver {
       }
     }
 
+    // Invokes the functions loaded into the preHookPipeline and then invokes the individual DesolverFrgment. 
     const resolvedValue = await this.execute(
       parent,
       args,
       context,
       info,
-      ...this.pipeline,
+      ...this.preHookPipeline,
       ...desolvers
     );
 
@@ -148,6 +154,12 @@ export class Desolver {
     return resolvedValue;
   }
 
+  /*
+  Iterates over the DesolverFragments after the preHookPipeline.
+  Executes the preHookPipeline functions and then executes the DesolverFragments.
+  DesolverFragments are executed in the order they are passed into useRoute.
+  If useRoute is not invoked in the resolver, just the individual resolver is resolved. 
+  */
   private async execute(
     parent: Record<string, unknown>,
     args: Record<string, unknown>,
@@ -223,7 +235,7 @@ export class Desolver {
       'Error Message': error.message,
     };
     throw new Error(
-      `failed to resolve ${this.pipeline[this.hasNext]}: ${errorObj}`
+      `failed to resolve ${this.preHookPipeline[this.hasNext]}: ${errorObj}`
     );
   }
 }
