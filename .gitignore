@@ -104,3 +104,6 @@ dist
 
 # Redis RDB
 *.rdb
+
+# DS Store
+.DS_store
