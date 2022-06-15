@@ -1,5 +1,5 @@
-import { Desolver } from 'desolver';
-
+// import { Desolver } from 'desolver';
+import { Desolver } from '../lib'
 // const Desolver = require('desolver')
 
 let result = false
@@ -9,7 +9,7 @@ const testIt = () => {
     result = true
   }
 
-  return result
+  return console.log(result)
 }
 
 testIt()
