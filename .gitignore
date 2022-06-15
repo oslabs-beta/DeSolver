@@ -110,3 +110,4 @@ dist
 
 # compliled TS files
 /lib
+.npmignore
